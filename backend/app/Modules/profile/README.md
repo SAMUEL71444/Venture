@@ -1,0 +1,1 @@
+Placeholder for UMKM, student, mentor, skill, and portfolio profiles.
