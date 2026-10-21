@@ -46,7 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             if ($exception instanceof BusinessRuleViolation) {
-                return ApiResponse::error('BUSINESS_RULE_VIOLATION', $exception->getMessage(), $exception->details, 422);
+                return ApiResponse::error($exception->errorCode, $exception->getMessage(), $exception->details, 422);
             }
 
             if ($exception instanceof ValidationException) {
@@ -80,6 +80,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 $code = match ($status) {
                     404 => 'NOT_FOUND',
                     405 => 'METHOD_NOT_ALLOWED',
+                    503 => 'SERVICE_UNAVAILABLE',
                     default => 'HTTP_ERROR',
                 };
 

@@ -70,13 +70,13 @@ final class OtpService
             if ($user) {
                 throw new BusinessRuleViolation($channel === self::CHANNEL_EMAIL
                     ? 'This email is already registered.'
-                    : 'This phone number is already registered.');
+                    : 'This phone number is already registered.', [], 'IDENTIFIER_ALREADY_REGISTERED');
             }
 
             if ($this->hasRecentCode($channel, $identifier, $purpose, $cooldown)) {
                 throw new BusinessRuleViolation('Please wait before requesting another OTP.', [
                     'retry_after_seconds' => $cooldown,
-                ]);
+                ], 'OTP_RESEND_COOLDOWN');
             }
         }
 
@@ -159,7 +159,7 @@ final class OtpService
         if (isset($result['error'])) {
             if ($isReset) {
                 // Pesan seragam: sisa percobaan akan membocorkan bahwa akun itu ada.
-                throw new BusinessRuleViolation('The verification code is invalid or expired.');
+                throw new BusinessRuleViolation('The verification code is invalid or expired.', [], 'OTP_INVALID');
             }
 
             $details = $result['error'] === 'invalid'
@@ -170,7 +170,11 @@ final class OtpService
                 'attempt_limit' => 'OTP attempt limit reached. Request a new code.',
                 'expired' => 'OTP is invalid or expired.',
                 default => 'OTP is invalid or expired.',
-            }, $details);
+            }, $details, match ($result['error']) {
+                'attempt_limit' => 'OTP_MAX_ATTEMPTS',
+                'expired' => 'OTP_EXPIRED',
+                default => 'OTP_INVALID',
+            });
         }
 
         return [
@@ -202,7 +206,7 @@ final class OtpService
                 $purpose === self::PURPOSE_PASSWORD_RESET => 'Password reset session is invalid or expired.',
                 $channel === self::CHANNEL_EMAIL => 'Email verification is missing or expired.',
                 default => 'Phone verification is missing or expired.',
-            });
+            }, [], $purpose === self::PURPOSE_PASSWORD_RESET ? 'RESET_TOKEN_INVALID' : 'VERIFICATION_TOKEN_INVALID');
         }
 
         $otp->verification_token_hash = null;

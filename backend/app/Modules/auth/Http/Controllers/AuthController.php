@@ -15,7 +15,6 @@ use App\Modules\auth\Services\RefreshTokenService;
 use App\Modules\auth\State\UserStateMachine;
 use App\Shared\Exceptions\BusinessRuleViolation;
 use App\Shared\Http\ApiResponse;
-use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -118,7 +117,7 @@ final class AuthController extends Controller
             $campusDomain = Str::lower(Str::afterLast($input['campus_email'], '@'));
 
             if (! hash_equals(Str::lower($university->email_domain), $campusDomain)) {
-                throw new BusinessRuleViolation('Campus email domain does not match the selected university.');
+                throw new BusinessRuleViolation('Campus email domain does not match the selected university.', [], 'CAMPUS_EMAIL_DOMAIN_MISMATCH');
             }
         }
 
@@ -208,8 +207,9 @@ final class AuthController extends Controller
                 filter_var($identifier, FILTER_VALIDATE_EMAIL) ? Str::lower($identifier) : $identifier)
             ->first();
 
+        // Akun tidak ada, password salah, dan akun ditangguhkan sengaja dijawab sama (anti-enumerasi).
         if (! $user || ! Hash::check($input['password'], $user->password_hash) || $user->status === 'SUSPENDED') {
-            throw new AuthenticationException('The provided credentials are invalid.');
+            return ApiResponse::error('INVALID_CREDENTIALS', 'The provided credentials are invalid.', null, 401);
         }
 
         $user->forceFill(['last_login_at' => now()])->save();

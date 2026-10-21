@@ -148,12 +148,12 @@ it('accepts a reset token once, only for its identifier and purpose, and for 15 
     resetUser(['email' => 'other@example.test', 'phone' => '+6281234567891']);
     $token = resetToken();
 
-    resetPassword($token, ['identifier' => 'other@example.test'])->assertUnprocessable()->assertJsonPath('error.code', 'BUSINESS_RULE_VIOLATION');
+    resetPassword($token, ['identifier' => 'other@example.test'])->assertUnprocessable()->assertJsonPath('error.code', 'RESET_TOKEN_INVALID');
     resetPassword($token, ['channel' => 'whatsapp', 'identifier' => '+6281234567890'])->assertUnprocessable();
 
     $this->travel(14)->minutes();
     resetPassword($token)->assertOk();
-    resetPassword($token)->assertUnprocessable()->assertJsonPath('error.code', 'BUSINESS_RULE_VIOLATION');
+    resetPassword($token)->assertUnprocessable()->assertJsonPath('error.code', 'RESET_TOKEN_INVALID');
 });
 
 it('expires the reset token after 15 minutes', function () {
@@ -161,7 +161,7 @@ it('expires the reset token after 15 minutes', function () {
     $token = resetToken();
 
     $this->travel(16)->minutes();
-    resetPassword($token)->assertUnprocessable()->assertJsonPath('error.code', 'BUSINESS_RULE_VIOLATION');
+    resetPassword($token)->assertUnprocessable()->assertJsonPath('error.code', 'RESET_TOKEN_INVALID');
 });
 
 it('does not accept a registration verification token as a reset token', function () {

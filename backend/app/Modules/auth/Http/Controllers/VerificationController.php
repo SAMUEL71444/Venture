@@ -25,7 +25,7 @@ final class VerificationController extends Controller
         $profile = $request->user()->studentProfile;
 
         if (! $profile?->campus_email) {
-            throw new BusinessRuleViolation('Campus email is not set for this student profile.');
+            throw new BusinessRuleViolation('Campus email is not set for this student profile.', [], 'CAMPUS_EMAIL_NOT_SET');
         }
 
         if ($profile->campus_email_verified_at || $profile->verification_status !== 'PENDING') {
@@ -87,7 +87,7 @@ final class VerificationController extends Controller
         $student = $request->user()->studentProfile;
 
         if (! $student || $student->campus_email_verified_at || $student->verification_status !== 'PENDING') {
-            throw new BusinessRuleViolation('KTM verification is only available for students without verified campus email.');
+            throw new BusinessRuleViolation('KTM verification is only available for students without verified campus email.', [], 'KTM_VERIFICATION_NOT_ALLOWED');
         }
 
         $oldPath = $student->ktm_file_url;
@@ -195,7 +195,7 @@ final class VerificationController extends Controller
             $user = User::query()->lockForUpdate()->findOrFail($student->user_id);
 
             if (! $student->ktm_file_url || $student->campus_email_verified_at) {
-                throw new BusinessRuleViolation('This student does not have a pending KTM verification.');
+                throw new BusinessRuleViolation('This student does not have a pending KTM verification.', [], 'KTM_VERIFICATION_NOT_PENDING');
             }
 
             $target = $decision === 'approve' ? 'VERIFIED' : 'REJECTED';

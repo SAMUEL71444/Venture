@@ -123,7 +123,7 @@ it('binds the verification token to its channel and identifier and allows one us
     // Identifier lain di kanal yang sama.
     $this->postJson('/api/v1/auth/register/umkm', [...$payload, 'email' => 'other@example.test'])
         ->assertUnprocessable()
-        ->assertJsonPath('error.code', 'BUSINESS_RULE_VIOLATION');
+        ->assertJsonPath('error.code', 'VERIFICATION_TOKEN_INVALID');
 
     // Kanal lain.
     $this->postJson('/api/v1/auth/register/umkm', [...$payload, 'phone' => '+6281234567890'])
@@ -135,7 +135,7 @@ it('binds the verification token to its channel and identifier and allows one us
     User::query()->delete();
     $this->postJson('/api/v1/auth/register/umkm', [...$payload, 'email' => 'owner@example.test'])
         ->assertUnprocessable()
-        ->assertJsonPath('error.code', 'BUSINESS_RULE_VIOLATION');
+        ->assertJsonPath('error.code', 'VERIFICATION_TOKEN_INVALID');
 });
 
 it('rejects duplicate email and phone at OTP send and at registration', function () {
@@ -143,10 +143,10 @@ it('rejects duplicate email and phone at OTP send and at registration', function
 
     $this->postJson('/api/v1/auth/otp/send', ['channel' => 'email', 'identifier' => 'TAKEN@example.test'])
         ->assertUnprocessable()
-        ->assertJsonPath('error.code', 'BUSINESS_RULE_VIOLATION');
+        ->assertJsonPath('error.code', 'IDENTIFIER_ALREADY_REGISTERED');
     $this->postJson('/api/v1/auth/otp/send', ['channel' => 'whatsapp', 'identifier' => '+6281234567890'])
         ->assertUnprocessable()
-        ->assertJsonPath('error.code', 'BUSINESS_RULE_VIOLATION');
+        ->assertJsonPath('error.code', 'IDENTIFIER_ALREADY_REGISTERED');
 
     $this->postJson('/api/v1/auth/register/mentor', [
         'name' => 'X', 'email' => 'taken@example.test', 'verification_token' => str_repeat('a', 64),

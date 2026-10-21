@@ -69,7 +69,7 @@ final class PasswordResetController extends Controller
                 ->first();
 
             if (! $user) {
-                throw new BusinessRuleViolation('Password reset session is invalid or expired.');
+                throw new BusinessRuleViolation('Password reset session is invalid or expired.', [], 'RESET_TOKEN_INVALID');
             }
 
             if ($user->status === 'SUSPENDED') {
