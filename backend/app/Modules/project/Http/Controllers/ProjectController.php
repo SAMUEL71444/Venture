@@ -67,7 +67,8 @@ final class ProjectController extends Controller
             $query->where('city', $input['city']);
         }
         if (! empty($input['q'])) {
-            $query->whereRaw('LOWER(title) LIKE ?', ['%'.addcslashes(mb_strtolower($input['q']), '%_\\').'%']);
+            // ESCAPE eksplisit: PostgreSQL memakai backslash sebagai escape bawaan, SQLite tidak punya escape bawaan.
+            $query->whereRaw("LOWER(title) LIKE ? ESCAPE '\\'", ['%'.addcslashes(mb_strtolower($input['q']), '%_\\').'%']);
         }
 
         // Premium listing yang sedang aktif tampil lebih dulu.

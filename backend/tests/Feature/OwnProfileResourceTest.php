@@ -14,6 +14,7 @@ const OWN_PROFILE_USER_KEYS = ['id', 'name', 'email', 'phone', 'role', 'status']
 const OWN_PROFILE_STUDENT_KEYS = [
     'id', 'university', 'university_name_custom', 'nim', 'major', 'semester', 'bio', 'is_available',
     'campus_email', 'campus_email_verified_at', 'verification_status', 'has_ktm', 'verification_rejection_reason',
+    'verification_attempts', 'verification_attempts_remaining',
 ];
 const OWN_PROFILE_FORBIDDEN = ['password', 'password_hash', 'remember_token', 'access_token', 'refresh_token', 'token_hash',
     'ktm_file_url', 'verified_by', 'user_id', 'rating_avg', 'completed_contracts_count', 'created_at', 'updated_at',

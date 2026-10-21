@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\MentorProfile;
 use App\Models\StudentProfile;
 use App\Models\UmkmProfile;
+use App\Modules\auth\Http\Controllers\VerificationController;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -45,6 +46,8 @@ final class OwnProfileResource extends JsonResource
             'verification_status' => $this->verification_status,
             'has_ktm' => $this->has_ktm,
             'verification_rejection_reason' => $this->verification_status === 'REJECTED' ? $this->rejectionReason() : null,
+            'verification_attempts' => (int) $this->verification_attempts,
+            'verification_attempts_remaining' => max(0, VerificationController::MAX_KTM_ATTEMPTS - (int) $this->verification_attempts),
         ];
     }
 
@@ -82,7 +85,9 @@ final class OwnProfileResource extends JsonResource
             ->where('entity_type', StudentProfile::class)
             ->where('entity_id', $this->id)
             ->where('action', 'STUDENT_KTM_reject')
-            ->latest('created_at')
+            // created_at hanya berpresisi detik; id (UUIDv7, terurut waktu) memecah seri.
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->first()?->after_data;
 
         return is_array($after) ? ($after['reason'] ?? null) : null;

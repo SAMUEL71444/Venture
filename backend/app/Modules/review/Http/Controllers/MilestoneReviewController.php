@@ -152,10 +152,10 @@ final class MilestoneReviewController extends Controller
             throw new AuthorizationException('You are not allowed to download this file.');
         }
 
-        if (! Storage::disk(MilestoneReviewService::FILE_DISK)->exists($file->file_url)) {
+        if (! Storage::disk(MilestoneReviewService::fileDisk())->exists($file->file_url)) {
             abort(404);
         }
 
-        return Storage::disk(MilestoneReviewService::FILE_DISK)->download($file->file_url, $file->file_name);
+        return Storage::disk(MilestoneReviewService::fileDisk())->download($file->file_url, $file->file_name);
     }
 }

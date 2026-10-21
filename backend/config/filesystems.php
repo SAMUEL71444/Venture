@@ -68,6 +68,36 @@ return [
             'report' => false,
         ],
 
+        // Cloudflare R2 (S3-compatible) untuk file sensitif di produksi. Bucket PRIVAT:
+        // tidak ada URL publik; file diambil lewat endpoint berotorisasi (stream/download).
+        'r2' => [
+            'driver' => 's3',
+            'key' => env('R2_ACCESS_KEY_ID'),
+            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'region' => env('R2_REGION', 'auto'),
+            'bucket' => env('R2_BUCKET'),
+            'endpoint' => env('R2_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Disk untuk unggahan sensitif
+    |--------------------------------------------------------------------------
+    |
+    | Development: disk lokal privat (storage/app/private). Produksi: isi 'r2'
+    | karena filesystem server (mis. Render) tidak permanen.
+    |
+    */
+
+    'sensitive_disks' => [
+        'ktm' => env('KTM_FILES_DISK', 'private'),
+        'submissions' => env('SUBMISSION_FILES_DISK', 'local'),
     ],
 
     /*

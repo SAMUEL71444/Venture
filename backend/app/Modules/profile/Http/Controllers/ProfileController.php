@@ -11,6 +11,7 @@ use App\Models\UmkmProfile;
 use App\Models\University;
 use App\Modules\auth\Http\Resources\AuthUserResource;
 use App\Modules\profile\Http\Resources\OwnProfileResource;
+use App\Modules\profile\Http\Resources\PublicStudentProfileResource;
 use App\Shared\Exceptions\BusinessRuleViolation;
 use App\Shared\Http\ApiResponse;
 use Illuminate\Http\Request;
@@ -90,18 +91,7 @@ final class ProfileController extends Controller
         abort_unless($student->verification_status === 'VERIFIED' && $student->user()->value('status') === 'ACTIVE', 404);
         $student->load(['user:id,name,role', 'university:id,name,city', 'skills', 'portfolioItems']);
 
-        return ApiResponse::success([
-            'id' => $student->id,
-            'name' => $student->user->name,
-            'major' => $student->major,
-            'semester' => $student->semester,
-            'bio' => $student->bio,
-            'rating_avg' => $student->rating_avg,
-            'completed_contracts_count' => $student->completed_contracts_count,
-            'university' => $student->university,
-            'skills' => $student->skills,
-            'portfolio' => $student->portfolioItems,
-        ]);
+        return ApiResponse::success(new PublicStudentProfileResource($student));
     }
 
     public function students(Request $request)
@@ -133,15 +123,7 @@ final class ProfileController extends Controller
 
         $students = $query->orderByDesc('rating_avg')->paginate(20);
 
-        return ApiResponse::success($students->getCollection()->map(fn (StudentProfile $student) => [
-            'id' => $student->id,
-            'name' => $student->user->name,
-            'major' => $student->major,
-            'semester' => $student->semester,
-            'rating_avg' => $student->rating_avg,
-            'university' => $student->university,
-            'skills' => $student->skills,
-        ])->all(), [
+        return ApiResponse::success(PublicStudentProfileResource::collection($students->getCollection())->resolve(), [
             'current_page' => $students->currentPage(),
             'last_page' => $students->lastPage(),
             'per_page' => $students->perPage(),

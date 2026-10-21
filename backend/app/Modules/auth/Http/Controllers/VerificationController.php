@@ -20,6 +20,15 @@ use Illuminate\Support\Str;
 
 final class VerificationController extends Controller
 {
+    /** Total pengajuan KTM (unggah pertama + unggah ulang setelah ditolak). */
+    public const MAX_KTM_ATTEMPTS = 3;
+
+    /** Disk privat file KTM (config filesystems.sensitive_disks.ktm; produksi: r2). */
+    public static function ktmDisk(): string
+    {
+        return (string) config('filesystems.sensitive_disks.ktm', 'private');
+    }
+
     public function sendCampusEmailVerification(Request $request, CampusEmailVerificationService $service)
     {
         $profile = $request->user()->studentProfile;
@@ -84,30 +93,49 @@ final class VerificationController extends Controller
         return ApiResponse::success(['verified' => true]);
     }
 
-    public function uploadKtm(Request $request)
+    public function uploadKtm(Request $request, VerificationStateMachine $verificationStates)
     {
         $input = $request->validate([
             'ktm' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
         ]);
         $student = $request->user()->studentProfile;
 
-        if (! $student || $student->campus_email_verified_at || $student->verification_status !== 'PENDING') {
+        $resubmission = $student?->verification_status === 'REJECTED';
+
+        if (! $student || $student->campus_email_verified_at || ! in_array($student->verification_status, ['PENDING', 'REJECTED'], true)) {
             throw new BusinessRuleViolation('KTM verification is only available for students without verified campus email.', [], 'KTM_VERIFICATION_NOT_ALLOWED');
         }
 
-        $oldPath = $student->ktm_file_url;
+        if ($resubmission && $student->verification_attempts >= self::MAX_KTM_ATTEMPTS) {
+            throw new BusinessRuleViolation('Maximum number of KTM verification attempts reached. Contact support.', [
+                'max_attempts' => self::MAX_KTM_ATTEMPTS,
+                'attempts' => $student->verification_attempts,
+            ], 'VERIFICATION_ATTEMPTS_EXCEEDED');
+        }
+
+        // Ditolak → pengajuan ulang kembali menunggu review (riwayat alasan tetap di audit log).
+        $oldPath = $resubmission ? null : $student->ktm_file_url;
+        $rejectedPath = $resubmission ? $student->ktm_file_url : null;
+        if ($resubmission) {
+            $verificationStates->transition($student, 'PENDING');
+        }
         $extension = strtolower($input['ktm']->extension());
         $path = $input['ktm']->storeAs(
             "verification/ktm/{$student->user_id}",
             Str::uuid().".{$extension}",
-            'private',
+            self::ktmDisk(),
         );
 
+        // Unggahan pertama = satu pengajuan; mengganti file selama masih menunggu review tidak menambah hitungan.
+        if (! $oldPath) {
+            $student->verification_attempts = $student->verification_attempts + 1;
+        }
         $student->ktm_file_url = $path;
+        $student->ktm_submitted_at = now();
         $student->save();
 
-        if ($oldPath) {
-            Storage::disk('private')->delete($oldPath);
+        foreach (array_filter([$oldPath, $rejectedPath]) as $previous) {
+            Storage::disk(self::ktmDisk())->delete($previous);
         }
 
         return ApiResponse::success(['verification_status' => $student->verification_status], [], 202);
@@ -118,7 +146,7 @@ final class VerificationController extends Controller
         $students = StudentProfile::query()
             ->where('verification_status', 'PENDING')
             ->whereNotNull('ktm_file_url')
-            ->with('user:id,name,email,role')
+            ->with(['user:id,name,email,role', 'university:id,name'])
             ->get()
             ->map(fn (StudentProfile $profile) => [
                 'id' => $profile->id,
@@ -126,7 +154,11 @@ final class VerificationController extends Controller
                 'verification_status' => $profile->verification_status,
                 'user' => $profile->user,
                 'university_id' => $profile->university_id,
+                'university_name' => $profile->university?->name,
                 'university_name_custom' => $profile->university_name_custom,
+                'method' => 'KTM',
+                'submitted_at' => ($profile->ktm_submitted_at ?? $profile->updated_at)?->toIso8601String(),
+                'attempts' => max(1, (int) $profile->verification_attempts),
                 'created_at' => $profile->created_at,
             ]);
 
@@ -139,6 +171,9 @@ final class VerificationController extends Controller
                 'type' => 'MENTOR',
                 'verification_status' => $profile->verification_status,
                 'user' => $profile->user,
+                'method' => 'MENTOR_REVIEW',
+                'submitted_at' => $profile->created_at?->toIso8601String(),
+                'attempts' => 1,
                 'created_at' => $profile->created_at,
             ]);
 
@@ -151,10 +186,10 @@ final class VerificationController extends Controller
         $path = $student->ktm_file_url;
 
         abort_if(str_contains($path, '..') || str_starts_with($path, '/'), 404);
-        abort_unless(Storage::disk('private')->exists($path), 404);
+        abort_unless(Storage::disk(self::ktmDisk())->exists($path), 404);
 
         return response()->streamDownload(function () use ($path) {
-            $stream = Storage::disk('private')->readStream($path);
+            $stream = Storage::disk(self::ktmDisk())->readStream($path);
 
             if ($stream === false) {
                 abort(404);

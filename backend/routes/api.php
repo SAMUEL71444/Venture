@@ -1,8 +1,12 @@
 <?php
 
 use App\Modules\admin\Http\Controllers\AdminAlertController;
+use App\Modules\admin\Http\Controllers\AdminDashboardController;
 use App\Modules\admin\Http\Controllers\AdminDecisionController;
+use App\Modules\admin\Http\Controllers\AdminDisputeController;
+use App\Modules\admin\Http\Controllers\AdminEscrowController;
 use App\Modules\admin\Http\Controllers\AdminSettingsController;
+use App\Modules\admin\Http\Controllers\AdminUserController;
 use App\Modules\application\Http\Controllers\ApplicationController;
 use App\Modules\application\Http\Controllers\InvitationController;
 use App\Modules\auth\Http\Controllers\AuthController;
@@ -133,6 +137,12 @@ Route::prefix('v1')->group(function () {
             Route::post('/milestones/{milestone}/reassign-mentor', [AdminDecisionController::class, 'reassignMentor']);
             Route::post('/milestones/{milestone}/extra-chance', [AdminDecisionController::class, 'extraChance']);
             Route::post('/milestones/{milestone}/forward-to-client', [AdminDecisionController::class, 'forwardToClient']);
+            Route::get('/dashboard/summary', [AdminDashboardController::class, 'summary']);
+            Route::get('/escrows', [AdminEscrowController::class, 'index']);
+            Route::get('/disputes', [AdminDisputeController::class, 'index']);
+            Route::get('/disputes/{alert}', [AdminDisputeController::class, 'show']);
+            Route::get('/users', [AdminUserController::class, 'index']);
+            Route::get('/users/{user}', [AdminUserController::class, 'show']);
             Route::post('/users/{user}/suspend', [AdminDecisionController::class, 'suspendUser']);
             Route::get('/settings', [AdminSettingsController::class, 'index']);
             Route::put('/settings', [AdminSettingsController::class, 'update']);

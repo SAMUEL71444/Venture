@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Escrow extends Model
 {
@@ -27,5 +28,10 @@ class Escrow extends Model
             'refunded_amount' => 'integer',
             'held_amount' => 'integer',
         ];
+    }
+
+    public function contract(): BelongsTo
+    {
+        return $this->belongsTo(Contract::class);
     }
 }

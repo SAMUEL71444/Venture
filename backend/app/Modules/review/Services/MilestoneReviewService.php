@@ -35,7 +35,11 @@ use Throwable;
  */
 final class MilestoneReviewService
 {
-    public const FILE_DISK = 'local';
+    /** Disk privat file hasil kerja (config filesystems.sensitive_disks.submissions; produksi: r2). */
+    public static function fileDisk(): string
+    {
+        return (string) config('filesystems.sensitive_disks.submissions', 'local');
+    }
 
     public function __construct(
         private readonly TransactionRunner $transactions,
@@ -98,7 +102,7 @@ final class MilestoneReviewService
                 ]);
 
                 foreach ($files as $file) {
-                    $path = $file->store('submissions/'.$submission->id, self::FILE_DISK);
+                    $path = $file->store('submissions/'.$submission->id, self::fileDisk());
                     if ($path === false) {
                         throw new \RuntimeException('Failed to store submission file.');
                     }
@@ -131,7 +135,7 @@ final class MilestoneReviewService
         } catch (Throwable $exception) {
             // File sudah ditulis tapi transaksi gagal: hapus agar tidak ada file yatim.
             if ($storedPaths !== []) {
-                Storage::disk(self::FILE_DISK)->delete($storedPaths);
+                Storage::disk(self::fileDisk())->delete($storedPaths);
             }
 
             throw $exception;

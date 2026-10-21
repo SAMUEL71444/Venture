@@ -10,7 +10,8 @@ final class VerificationStateMachine
     private const TRANSITIONS = [
         'PENDING' => ['VERIFIED', 'REJECTED'],
         'VERIFIED' => [],
-        'REJECTED' => [],
+        // Pengajuan ulang setelah ditolak (dibatasi jumlahnya di VerificationController@uploadKtm).
+        'REJECTED' => ['PENDING'],
     ];
 
     public function transition(Model $profile, string $to): void

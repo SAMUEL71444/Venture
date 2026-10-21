@@ -13,7 +13,7 @@ class StudentProfile extends Model
     use HasUuids;
 
     protected $fillable = [
-        'user_id', 'university_id', 'university_name_custom', 'nim', 'major', 'semester', 'campus_email', 'campus_email_verified_at', 'ktm_file_url',
+        'user_id', 'university_id', 'university_name_custom', 'nim', 'major', 'semester', 'campus_email', 'campus_email_verified_at', 'ktm_file_url', 'verification_attempts', 'ktm_submitted_at',
         'verification_status', 'verified_by', 'bio', 'rating_avg', 'completed_contracts_count',
         'active_contracts_count', 'is_available',
     ];
@@ -33,6 +33,8 @@ class StudentProfile extends Model
         return [
             'semester' => 'integer',
             'campus_email_verified_at' => 'datetime',
+            'ktm_submitted_at' => 'datetime',
+            'verification_attempts' => 'integer',
             'is_available' => 'boolean',
             'completed_contracts_count' => 'integer',
             'active_contracts_count' => 'integer',
