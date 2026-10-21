@@ -6,6 +6,7 @@ use App\Modules\admin\Http\Controllers\AdminSettingsController;
 use App\Modules\application\Http\Controllers\ApplicationController;
 use App\Modules\application\Http\Controllers\InvitationController;
 use App\Modules\auth\Http\Controllers\AuthController;
+use App\Modules\auth\Http\Controllers\PasswordResetController;
 use App\Modules\auth\Http\Controllers\VerificationController;
 use App\Modules\cancellation\Http\Controllers\CancellationController;
 use App\Modules\certificate\Http\Controllers\CertificateController;
@@ -34,6 +35,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
         Route::post('/refresh', [AuthController::class, 'refresh'])->middleware('throttle:refresh');
         Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+        Route::post('/password/otp/send', [PasswordResetController::class, 'sendOtp'])->middleware('throttle:password-otp-send');
+        Route::post('/password/otp/verify', [PasswordResetController::class, 'verifyOtp'])->middleware('throttle:password-otp-verify');
+        Route::post('/password/reset', [PasswordResetController::class, 'reset'])->middleware('throttle:password-reset');
         Route::get('/email/verify/{profile}/{hash}', [VerificationController::class, 'verifyCampusEmail'])
             ->middleware('signed')
             ->name('auth.email.verify');

@@ -65,6 +65,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 return ApiResponse::error('NOT_FOUND', 'The requested resource was not found.', null, 404);
             }
 
+            if ($exception instanceof HttpExceptionInterface && $exception->getStatusCode() === 429) {
+                $headers = $exception->getHeaders();
+                $retryAfter = isset($headers['Retry-After']) ? (int) $headers['Retry-After'] : null;
+
+                // Header Retry-After & X-RateLimit-* diteruskan agar klien bisa menampilkan hitung mundur.
+                return ApiResponse::error('TOO_MANY_REQUESTS', 'Too many requests. Please try again later.', [
+                    'retry_after' => $retryAfter,
+                ], 429)->withHeaders($headers);
+            }
+
             if ($exception instanceof HttpExceptionInterface) {
                 $status = $exception->getStatusCode();
                 $code = match ($status) {

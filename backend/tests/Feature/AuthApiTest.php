@@ -4,11 +4,13 @@ use App\Models\OtpCode;
 use App\Models\StudentProfile;
 use App\Models\University;
 use App\Models\User;
+use App\Modules\auth\Mail\OtpCodeMail;
 use App\Modules\auth\Notifications\VerifyCampusEmailNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
@@ -83,9 +85,24 @@ class AuthApiTest extends TestCase
             'is_partner' => true,
         ]);
 
+        Mail::fake();
+        $this->postJson('/api/v1/auth/otp/send', ['channel' => 'email', 'identifier' => 'nadia@example.test'])->assertAccepted();
+        $code = null;
+        Mail::assertSent(OtpCodeMail::class, function (OtpCodeMail $mail) use (&$code) {
+            $code = $mail->code;
+
+            return true;
+        });
+        $verification = $this->postJson('/api/v1/auth/otp/verify', [
+            'channel' => 'email',
+            'identifier' => 'nadia@example.test',
+            'code' => $code,
+        ])->assertOk()->json('data.verification_token');
+
         $response = $this->postJson('/api/v1/auth/register/student', [
             'name' => 'Nadia Putri',
             'email' => 'nadia@example.test',
+            'verification_token' => $verification,
             'password' => 'correct horse battery',
             'university_id' => $university->id,
             'campus_email' => 'nadia@example.ac.id',

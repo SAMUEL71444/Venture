@@ -117,6 +117,8 @@ return [
     'otp_ttl_minutes' => (int) env('OTP_TTL_MINUTES', 5),
     'otp_resend_cooldown_seconds' => (int) env('OTP_RESEND_COOLDOWN_SECONDS', 60),
     'otp_max_attempts' => (int) env('OTP_MAX_ATTEMPTS', 5),
+    // Masa berlaku reset_token setelah OTP reset password diverifikasi.
+    'password_reset_token_ttl_minutes' => (int) env('PASSWORD_RESET_TOKEN_TTL_MINUTES', 15),
     'refresh_token_ttl_days' => (int) env('REFRESH_TOKEN_TTL_DAYS', 30),
     'email_verification_ttl_minutes' => (int) env('EMAIL_VERIFICATION_TTL_MINUTES', 60),
 

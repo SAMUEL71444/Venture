@@ -62,7 +62,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         RateLimiter::for('otp-send', fn (Request $request) => [
-            Limit::perMinute(1)->by('otp-send:'.(string) $request->input('phone').':'.$request->ip()),
+            Limit::perMinute(1)->by('otp-send:'.self::otpIdentifier($request).':'.$request->ip()),
             // Batas per IP: mencegah satu IP mengirim OTP WhatsApp berbayar ke banyak nomor (audit F6).
             Limit::perHour(10)->by('otp-send-ip:'.$request->ip()),
         ]);
@@ -77,12 +77,32 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         RateLimiter::for('otp-verify', fn (Request $request) => Limit::perMinute(10)
-            ->by('otp-verify:'.(string) $request->input('phone').':'.$request->ip()));
+            ->by('otp-verify:'.self::otpIdentifier($request).':'.$request->ip()));
+
+        // Lupa password: limiter terpisah dari OTP registrasi.
+        RateLimiter::for('password-otp-send', fn (Request $request) => [
+            Limit::perMinute(1)->by('password-otp-send:'.self::otpIdentifier($request).':'.$request->ip()),
+            Limit::perHour(10)->by('password-otp-send-ip:'.$request->ip()),
+        ]);
+        RateLimiter::for('password-otp-verify', fn (Request $request) => Limit::perMinute(10)
+            ->by('password-otp-verify:'.self::otpIdentifier($request).':'.$request->ip()));
+        RateLimiter::for('password-reset', fn (Request $request) => [
+            Limit::perMinute(5)->by('password-reset:'.self::otpIdentifier($request).':'.$request->ip()),
+            Limit::perHour(20)->by('password-reset-ip:'.$request->ip()),
+        ]);
 
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)
             ->by('login:'.strtolower((string) $request->input('identifier')).':'.$request->ip()));
 
         RateLimiter::for('refresh', fn (Request $request) => Limit::perMinute(10)
             ->by('refresh:'.$request->ip()));
+    }
+
+    /** Identifier OTP (email/nomor WA) untuk kunci rate limit; klien lama mengirim `phone`. */
+    private static function otpIdentifier(Request $request): string
+    {
+        $identifier = $request->input('identifier', $request->input('phone'));
+
+        return is_string($identifier) ? strtolower(trim($identifier)) : '';
     }
 }

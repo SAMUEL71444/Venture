@@ -10,6 +10,8 @@ class OtpCode extends Model
     use HasUuids;
 
     protected $fillable = [
+        'channel',
+        'identifier',
         'phone',
         'code_hash',
         'purpose',

@@ -8,6 +8,7 @@ use App\Models\StudentProfile;
 use App\Models\UmkmProfile;
 use App\Models\University;
 use App\Models\User;
+use App\Modules\auth\Http\Controllers\Concerns\ResolvesOtpTarget;
 use App\Modules\auth\Services\CampusEmailVerificationService;
 use App\Modules\auth\Services\OtpService;
 use App\Modules\auth\Services\RefreshTokenService;
@@ -19,26 +20,26 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 final class AuthController extends Controller
 {
+    use ResolvesOtpTarget;
+
     public function sendOtp(Request $request, OtpService $otpService)
     {
-        $input = $request->validate([
-            'phone' => ['required', 'string', 'regex:/^\+[1-9][0-9]{7,14}$/'],
-        ]);
+        [$channel, $identifier] = $this->validateOtpTarget($request);
 
-        return ApiResponse::success($otpService->send($input['phone']), [], 202);
+        return ApiResponse::success($otpService->send($identifier, $channel), [], 202);
     }
 
     public function verifyOtp(Request $request, OtpService $otpService)
     {
-        $input = $request->validate([
-            'phone' => ['required', 'string', 'regex:/^\+[1-9][0-9]{7,14}$/'],
+        [$channel, $identifier, $input] = $this->validateOtpTarget($request, [
             'code' => ['required', 'digits:6'],
         ]);
 
-        return ApiResponse::success($otpService->verify($input['phone'], $input['code']));
+        return ApiResponse::success($otpService->verify($identifier, $input['code'], $channel));
     }
 
     public function registerUmkm(
@@ -49,8 +50,7 @@ final class AuthController extends Controller
     ) {
         $input = $request->validate([
             'business_name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'regex:/^\+[1-9][0-9]{7,14}$/', 'unique:users,phone'],
-            'verification_token' => ['required', 'string', 'min:64'],
+            ...$this->contactRules($request),
             'password' => ['required', 'string', 'min:8', 'max:128'],
             'business_type' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:2000'],
@@ -59,15 +59,14 @@ final class AuthController extends Controller
         ]);
 
         $result = DB::transaction(function () use ($input, $otpService, $tokens, $states) {
-            $otpService->consumeRegistrationProof($input['phone'], $input['verification_token']);
+            $this->consumeContactProof($otpService, $input);
 
             $user = User::query()->create([
                 'name' => $input['business_name'],
-                'phone' => $input['phone'],
+                ...$this->contactAttributes($input),
                 'password_hash' => $input['password'],
                 'role' => 'UMKM',
                 'status' => 'PENDING_VERIFICATION',
-                'phone_verified_at' => now(),
             ]);
             $states->transition($user, 'ACTIVE');
             $user->save();
@@ -93,11 +92,11 @@ final class AuthController extends Controller
 
     public function registerStudent(
         Request $request,
+        OtpService $otpService,
         RefreshTokenService $tokens,
         CampusEmailVerificationService $emailVerification,
     ) {
         $request->merge([
-            'email' => Str::lower(trim((string) $request->input('email'))),
             'campus_email' => $request->filled('campus_email')
                 ? Str::lower(trim((string) $request->input('campus_email')))
                 : null,
@@ -105,7 +104,7 @@ final class AuthController extends Controller
 
         $input = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email:rfc', 'max:255', 'unique:users,email'],
+            ...$this->contactRules($request),
             'password' => ['required', 'string', 'min:8', 'max:128'],
             'university_id' => ['required', 'uuid', 'exists:universities,id'],
             'campus_email' => ['nullable', 'email:rfc', 'max:255', 'unique:student_profiles,campus_email'],
@@ -123,10 +122,12 @@ final class AuthController extends Controller
             }
         }
 
-        $result = DB::transaction(function () use ($input, $tokens) {
+        $result = DB::transaction(function () use ($input, $otpService, $tokens) {
+            $this->consumeContactProof($otpService, $input);
+
             $user = User::query()->create([
                 'name' => $input['name'],
-                'email' => Str::lower($input['email']),
+                ...$this->contactAttributes($input),
                 'password_hash' => $input['password'],
                 'role' => 'STUDENT',
                 'status' => 'PENDING_VERIFICATION',
@@ -155,25 +156,23 @@ final class AuthController extends Controller
         return ApiResponse::success($this->registrationResponse($result), [], 201);
     }
 
-    public function registerMentor(Request $request, RefreshTokenService $tokens)
+    public function registerMentor(Request $request, OtpService $otpService, RefreshTokenService $tokens)
     {
-        $request->merge([
-            'email' => Str::lower(trim((string) $request->input('email'))),
-        ]);
-
         $input = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email:rfc', 'max:255', 'unique:users,email'],
+            ...$this->contactRules($request),
             'password' => ['required', 'string', 'min:8', 'max:128'],
             'title' => ['required', 'string', 'max:255'],
             'institution' => ['required', 'string', 'max:255'],
             'bio' => ['nullable', 'string', 'max:4000'],
         ]);
 
-        $result = DB::transaction(function () use ($input, $tokens) {
+        $result = DB::transaction(function () use ($input, $otpService, $tokens) {
+            $this->consumeContactProof($otpService, $input);
+
             $user = User::query()->create([
                 'name' => $input['name'],
-                'email' => Str::lower($input['email']),
+                ...$this->contactAttributes($input),
                 'password_hash' => $input['password'],
                 'role' => 'MENTOR',
                 'status' => 'PENDING_VERIFICATION',
@@ -234,6 +233,46 @@ final class AuthController extends Controller
         $tokens->revoke($request->user(), $input['refresh_token']);
 
         return ApiResponse::success(['logged_out' => true]);
+    }
+
+    /**
+     * Kontak registrasi: email ATAU nomor HP (minimal satu) + verification_token
+     * dari OTP kanal tersebut. `channel` boleh dikosongkan bila hanya satu kontak diisi.
+     */
+    private function contactRules(Request $request): array
+    {
+        $email = $request->filled('email') ? Str::lower(trim((string) $request->input('email'))) : null;
+        $phone = $request->filled('phone') ? trim((string) $request->input('phone')) : null;
+        $channel = $request->input('channel') ?? match (true) {
+            $phone !== null && $email === null => OtpService::CHANNEL_WHATSAPP,
+            $email !== null && $phone === null => OtpService::CHANNEL_EMAIL,
+            default => null,
+        };
+        $request->merge(['email' => $email, 'phone' => $phone, 'channel' => $channel]);
+
+        return [
+            'channel' => ['required', 'string', Rule::in(OtpService::CHANNELS)],
+            'email' => ['nullable', 'required_if:channel,'.OtpService::CHANNEL_EMAIL, 'required_without:phone', 'email:rfc', 'max:255', 'unique:users,email'],
+            'phone' => ['nullable', 'required_if:channel,'.OtpService::CHANNEL_WHATSAPP, 'string', 'regex:'.OtpService::PHONE_PATTERN, 'unique:users,phone'],
+            'verification_token' => ['required', 'string', 'min:64'],
+        ];
+    }
+
+    /** Token verifikasi sekali pakai, terikat ke kanal + identifier yang didaftarkan. */
+    private function consumeContactProof(OtpService $otpService, array $input): void
+    {
+        $identifier = $input['channel'] === OtpService::CHANNEL_EMAIL ? $input['email'] : $input['phone'];
+        $otpService->consumeRegistrationProof($identifier, $input['verification_token'], $input['channel']);
+    }
+
+    private function contactAttributes(array $input): array
+    {
+        return [
+            'email' => $input['email'] ?? null,
+            'phone' => $input['phone'] ?? null,
+            'email_verified_at' => $input['channel'] === OtpService::CHANNEL_EMAIL ? now() : null,
+            'phone_verified_at' => $input['channel'] === OtpService::CHANNEL_WHATSAPP ? now() : null,
+        ];
     }
 
     private function registrationResponse(array $result): array

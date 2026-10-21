@@ -9,7 +9,8 @@ return [
     ))),
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
-    'exposed_headers' => [],
+    // Retry-After dibaca frontend untuk hitung mundur saat terkena rate limit.
+    'exposed_headers' => ['Retry-After'],
     'max_age' => 0,
     'supports_credentials' => false,
 ];
