@@ -23,7 +23,8 @@ const JOB_PREFS = ["Jangka pendek", "Jangka panjang", "Keduanya"];
 // (prototipe, belum ada backend) — nggak menyatu dengan perubahan yang
 // dibuat di /profile pada sesi yang sama.
 export default function ProfileSidePanel() {
-  const { user } = useRole();
+  const { user, authUser } = useRole();
+  const displayName = authUser?.name || user.name;
   const [data, setData] = useState(FREELANCER_PROFILE);
   const [toast, setToast] = useState(null);
   const [prefOpen, setPrefOpen] = useState(false);
@@ -54,10 +55,10 @@ export default function ProfileSidePanel() {
       <div className="card card-pad">
         <div className="row gap-12">
           <div className="avatar avatar-lg" style={{ background: user.avatarBg || "var(--primary-light)" }}>
-            {initials(user.name)}
+            {initials(displayName)}
           </div>
           <div style={{ minWidth: 0 }}>
-            <div className="t-h3">{user.name}</div>
+            <div className="t-h3">{displayName}</div>
             <div className="t-small muted">{user.plan}</div>
           </div>
         </div>

@@ -1,3 +1,15 @@
+// Pengaman deploy: di Vercel, URL backend wajib ada dan bukan localhost
+// (kalau tidak, aplikasi ter-deploy diam-diam memanggil server yang salah).
+if (process.env.VERCEL === "1") {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  if (!apiUrl || /localhost|127\.0\.0\.1/.test(apiUrl)) {
+    throw new Error("NEXT_PUBLIC_API_URL wajib diisi dengan URL backend publik (mis. https://<service>.onrender.com/api/v1).");
+  }
+  if (process.env.NEXT_PUBLIC_AUTH_MOCK === "true") {
+    console.warn("PERINGATAN: NEXT_PUBLIC_AUTH_MOCK=true — login memakai backend tiruan di browser. Jangan dipakai untuk pengguna sungguhan.");
+  }
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Verifikasi otomatis (build/dev server terpisah buat ambil screenshot)

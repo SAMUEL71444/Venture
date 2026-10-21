@@ -28,7 +28,7 @@ export default function UmkmDashboard() {
 }
 
 function UmkmDashboardInner({ scenarioKey, onScenarioChange }) {
-  const { user } = useRole();
+  const { user, authUser } = useRole();
   const { actions } = useEscrow();
   const scenario = SCENARIOS[scenarioKey];
 
@@ -101,7 +101,7 @@ function UmkmDashboardInner({ scenarioKey, onScenarioChange }) {
       )}
 
       <div className="ud-greeting">
-        <h1 className="ud-title">Selamat datang kembali, {firstName}</h1>
+        <h1 className="ud-title">Selamat datang kembali, {authUser?.name || firstName}</h1>
         <p className="ud-sub">{subtitle}</p>
       </div>
 

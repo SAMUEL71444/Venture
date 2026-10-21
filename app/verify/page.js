@@ -103,7 +103,10 @@ function StudentVerification() {
       return;
     }
     if (res.error.code === "VALIDATION") setFileError(res.error.fields?.ktm || res.error.message);
-    else setNotice({ tone: "error", title: res.error.message });
+    else if (res.error.code === "VERIFICATION_ATTEMPTS_EXCEEDED") {
+      setNotice({ tone: "error", title: res.error.message, text: "Hubungi tim Digital.in lewat Pusat Bantuan." });
+      load();
+    } else setNotice({ tone: "error", title: res.error.message });
   }
 
   async function resendCampusEmail() {
@@ -146,8 +149,11 @@ function StudentVerification() {
   const verified = user.status === "ACTIVE" || status === "VERIFIED";
   const rejected = !verified && status === "REJECTED";
   const waiting = !verified && status === "PENDING" && profile?.has_ktm;
-  const canUpload = !verified && status === "PENDING" && !profile?.campus_email_verified_at;
-  const canResendEmail = canUpload && !!profile?.campus_email;
+  // Ditolak: boleh unggah ulang selama masih ada sisa kesempatan (maks. 3 pengajuan).
+  const remaining = profile?.verification_attempts_remaining ?? 0;
+  const canResubmit = rejected && remaining > 0;
+  const canUpload = !verified && (status === "PENDING" || canResubmit) && !profile?.campus_email_verified_at;
+  const canResendEmail = !verified && status === "PENDING" && !profile?.campus_email_verified_at && !!profile?.campus_email;
   const university = profile?.university?.name || profile?.university_name_custom;
 
   return (
@@ -162,9 +168,11 @@ function StudentVerification() {
           Status mahasiswamu sudah terverifikasi. Semua fitur sudah bisa dipakai.
         </FormAlert>
       ) : rejected ? (
-        <FormAlert title="Verifikasi ditolak" action={<Link href="/help" className="btn btn-secondary btn-sm">Pusat Bantuan</Link>}>
+        <FormAlert title="Verifikasi ditolak" action={!canResubmit && <Link href="/help" className="btn btn-secondary btn-sm">Pusat Bantuan</Link>}>
           {profile.verification_rejection_reason ? <>Alasan: {profile.verification_rejection_reason}. </> : null}
-          Hubungi tim Digital.in untuk mengajukan ulang verifikasi.
+          {canResubmit
+            ? <>Perbaiki lalu unggah ulang KTM di bawah. Sisa kesempatan: <b>{remaining}</b> dari 3.</>
+            : <>Batas 3 kali pengajuan sudah tercapai. Hubungi tim Digital.in lewat Pusat Bantuan.</>}
         </FormAlert>
       ) : waiting ? (
         <FormAlert tone="info" title="Menunggu review">
@@ -190,7 +198,7 @@ function StudentVerification() {
       {canUpload && (
         <form className="au-form" onSubmit={submitKtm} noValidate>
           <div className="field">
-            <label htmlFor="verify-ktm">{waiting ? "Ganti file KTM" : "Unggah KTM"}</label>
+            <label htmlFor="verify-ktm">{waiting ? "Ganti file KTM" : canResubmit ? "Unggah ulang KTM" : "Unggah KTM"}</label>
             <input
               ref={fileRef} id="verify-ktm" name="ktm" type="file" className="input au-input"
               accept={KTM_EXTENSIONS.map((ext) => `.${ext}`).join(",")}
