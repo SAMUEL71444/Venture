@@ -9,6 +9,8 @@ use App\Models\ServiceCategory;
 use App\Models\StudentProfile;
 use App\Models\UmkmProfile;
 use App\Models\University;
+use App\Modules\auth\Http\Resources\AuthUserResource;
+use App\Modules\profile\Http\Resources\OwnProfileResource;
 use App\Shared\Exceptions\BusinessRuleViolation;
 use App\Shared\Http\ApiResponse;
 use Illuminate\Http\Request;
@@ -22,14 +24,14 @@ final class ProfileController extends Controller
         $user = $request->user();
         $profile = match ($user->role) {
             'UMKM' => $user->umkmProfile,
-            'STUDENT' => $user->studentProfile?->load(['university', 'skills', 'portfolioItems']),
+            'STUDENT' => $user->studentProfile?->load('university'),
             'MENTOR' => $user->mentorProfile?->load('expertises'),
             default => null,
         };
 
         return ApiResponse::success([
-            'user' => $user,
-            'profile' => $profile,
+            'user' => new AuthUserResource($user),
+            'profile' => $profile ? new OwnProfileResource($profile) : null,
         ]);
     }
 
@@ -44,7 +46,7 @@ final class ProfileController extends Controller
             default => throw new BusinessRuleViolation('This account does not have an editable profile.'),
         };
 
-        return ApiResponse::success(['user' => $user->fresh(), 'profile' => $profile]);
+        return ApiResponse::success(['user' => new AuthUserResource($user->fresh()), 'profile' => new OwnProfileResource($profile)]);
     }
 
     public function universities()

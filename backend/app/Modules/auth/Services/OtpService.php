@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Shared\Exceptions\BusinessRuleViolation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 use Throwable;
@@ -94,7 +95,13 @@ final class OtpService
             $this->delivery->send($channel, $identifier, $code, $purpose);
         } catch (Throwable $exception) {
             $otp->delete();
-            report($exception);
+            // Bukan report($exception): stack trace bisa memuat argumen fungsi (termasuk kode OTP)
+            // bila zend.exception_ignore_args=Off. Catat ringkasan tanpa kode.
+            Log::error('OTP delivery failed.', [
+                'channel' => $channel,
+                'purpose' => $purpose,
+                'error' => $this->safeErrorMessage($exception, $code),
+            ]);
 
             if ($isReset) {
                 // Galat pengiriman hanya terjadi untuk akun yang ada; jangan bocorkan lewat respons.
@@ -231,6 +238,13 @@ final class OtpService
         $channel ??= self::channelFor($identifier);
 
         return [$channel, self::normalize($channel, $identifier)];
+    }
+
+    private function safeErrorMessage(Throwable $exception, string $code): string
+    {
+        $message = class_basename($exception).': '.str_replace($code, '[kode disamarkan]', $exception->getMessage());
+
+        return Str::limit($message, 1000);
     }
 
     private function hasRecentCode(string $channel, string $identifier, string $purpose, int $cooldown): bool

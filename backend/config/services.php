@@ -65,6 +65,8 @@ return [
         'access_token' => env('WHATSAPP_ACCESS_TOKEN'),
         'otp_template' => env('WHATSAPP_OTP_TEMPLATE', 'otp_verification'),
         'language' => env('WHATSAPP_TEMPLATE_LANGUAGE', 'id'),
+        // Template Authentication dengan tombol "Salin kode" butuh parameter tombol.
+        'otp_copy_code_button' => (bool) env('WHATSAPP_OTP_COPY_CODE_BUTTON', true),
     ],
 
 ];

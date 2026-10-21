@@ -9,10 +9,12 @@ use App\Models\UmkmProfile;
 use App\Models\University;
 use App\Models\User;
 use App\Modules\auth\Http\Controllers\Concerns\ResolvesOtpTarget;
+use App\Modules\auth\Http\Resources\AuthUserResource;
 use App\Modules\auth\Services\CampusEmailVerificationService;
 use App\Modules\auth\Services\OtpService;
 use App\Modules\auth\Services\RefreshTokenService;
 use App\Modules\auth\State\UserStateMachine;
+use App\Modules\profile\Http\Resources\OwnProfileResource;
 use App\Shared\Exceptions\BusinessRuleViolation;
 use App\Shared\Http\ApiResponse;
 use Illuminate\Http\Request;
@@ -227,7 +229,7 @@ final class AuthController extends Controller
         $user->forceFill(['last_login_at' => now()])->save();
 
         return ApiResponse::success([
-            'user' => $this->userSummary($user),
+            'user' => new AuthUserResource($user),
             'tokens' => $tokens->issue($user),
         ]);
     }
@@ -301,23 +303,10 @@ final class AuthController extends Controller
     private function registrationResponse(array $result): array
     {
         return [
-            'user' => $this->userSummary($result['user']),
-            'profile' => $result['profile'],
+            'user' => new AuthUserResource($result['user']),
+            'profile' => new OwnProfileResource($result['profile']),
             'tokens' => $result['tokens'],
         ];
     }
 
-    private function userSummary(User $user): array
-    {
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'phone' => $user->phone,
-            'role' => $user->role,
-            'status' => $user->status,
-            'email_verified_at' => $user->email_verified_at?->toIso8601String(),
-            'phone_verified_at' => $user->phone_verified_at?->toIso8601String(),
-        ];
-    }
 }

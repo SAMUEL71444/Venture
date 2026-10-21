@@ -178,6 +178,7 @@ it('validates channel, email format and E.164 phone numbers', function () {
 
 it('writes OTP codes for both channels to the log when APP_ENV is local', function () {
     app()->detectEnvironment(fn () => 'local');
+    config(['mail.default' => 'log', 'services.meta_whatsapp.access_token' => null]);
     Log::spy();
 
     $this->postJson('/api/v1/auth/otp/send', ['channel' => 'email', 'identifier' => 'dev@example.test'])->assertAccepted();

@@ -5,8 +5,11 @@ namespace App\Modules\auth\Services;
 use InvalidArgumentException;
 
 /**
- * Memilih pengirim OTP per kanal. Saat APP_ENV=local kedua kanal ditulis ke log;
- * di luar itu WhatsApp lewat Meta Cloud API dan email lewat mailer Laravel.
+ * Memilih pengirim OTP per kanal (tidak lagi berdasarkan APP_ENV untuk email):
+ * - email: mailer Laravel (EmailOtpSender), kecuali MAIL_MAILER=log → kode ditulis
+ *   ke log lewat LogOtpSender (hanya diizinkan saat APP_ENV=local).
+ * - WhatsApp: Meta Cloud API bila kredensialnya lengkap; jika kosong → LogOtpSender
+ *   (hanya diizinkan saat APP_ENV=local; di luar itu gagal → SERVICE_UNAVAILABLE).
  */
 final class OtpDelivery
 {
@@ -18,16 +21,19 @@ final class OtpDelivery
 
     public function send(string $channel, string $identifier, string $code, string $purpose): void
     {
-        if (app()->environment('local')) {
-            $this->log->send($channel, $identifier, $code, $purpose);
-
-            return;
-        }
-
         match ($channel) {
-            OtpService::CHANNEL_WHATSAPP => $this->whatsapp->send($identifier, $code),
-            OtpService::CHANNEL_EMAIL => $this->email->send($identifier, $code, $purpose),
+            OtpService::CHANNEL_EMAIL => $this->usesLogMailer()
+                ? $this->log->send($channel, $identifier, $code, $purpose)
+                : $this->email->send($identifier, $code, $purpose),
+            OtpService::CHANNEL_WHATSAPP => $this->whatsapp->isConfigured()
+                ? $this->whatsapp->send($identifier, $code)
+                : $this->log->send($channel, $identifier, $code, $purpose),
             default => throw new InvalidArgumentException("Unknown OTP channel [{$channel}]."),
         };
+    }
+
+    private function usesLogMailer(): bool
+    {
+        return config('mail.default') === 'log';
     }
 }

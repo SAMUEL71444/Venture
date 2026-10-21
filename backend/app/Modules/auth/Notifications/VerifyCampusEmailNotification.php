@@ -2,9 +2,9 @@
 
 namespace App\Modules\auth\Notifications;
 
+use App\Modules\auth\Mail\CampusEmailVerificationMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
@@ -25,13 +25,10 @@ final class VerifyCampusEmailNotification extends Notification implements Should
         return ['mail'];
     }
 
-    public function toMail(object $notifiable): MailMessage
+    /** Templat sendiri (HTML + teks, Bahasa Indonesia) menggantikan MailMessage bawaan yang berteks Inggris. */
+    public function toMail(object $notifiable): CampusEmailVerificationMail
     {
-        return (new MailMessage)
-            ->subject('Verifikasi email kampus Digital.in')
-            ->greeting('Verifikasi email kampus Anda')
-            ->line('Gunakan tautan berikut untuk menyelesaikan verifikasi mahasiswa.')
-            ->action('Verifikasi email kampus', $this->verificationUrl)
-            ->line('Tautan berlaku selama 60 menit dan hanya dapat digunakan sekali.');
+        return (new CampusEmailVerificationMail($this->verificationUrl, (int) config('auth.email_verification_ttl_minutes', 60)))
+            ->to($notifiable->routeNotificationFor('mail', $this));
     }
 }
