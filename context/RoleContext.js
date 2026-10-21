@@ -1,9 +1,9 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { ROLES } from "@/config/roles";
 import { CURRENT_USERS } from "@/lib/users.mock";
-import { SESSION_ENDED_EVENT, getAuthUser } from "@/lib/auth/session";
+import { SESSION_ENDED_EVENT, ACCOUNT_PENDING_EVENT, getAuthUser } from "@/lib/auth/session";
 import { restoreSession, USE_MOCK } from "@/lib/auth/api";
 
 const STORAGE_KEY = "digitalin.role";
@@ -46,24 +46,33 @@ export function RoleProvider({ children }) {
   const [authUser, setAuthUserState] = useState(null);
   // "loading" (memulihkan sesi) | "authenticated" | "anonymous" (belum login)
   // | "signedOut" (baru saja menekan Keluar di tab ini)
+  // | "unreachable" (server tidak bisa dihubungi; token tetap ada, bisa dicoba lagi)
   const [status, setStatus] = useState("loading");
   const statusRef = useRef(status);
   statusRef.current = status;
 
-  useEffect(() => {
-    let alive = true;
-    restoreSession().then((user) => {
-      if (!alive) return;
-      if (!user) {
-        setStatus("anonymous");
+  const alive = useRef(true);
+  // Dipanggil sekali saat aplikasi dimuat, dan lagi HANYA lewat tombol "Coba lagi"
+  // (retrySession) — tidak ada percobaan ulang otomatis, jadi tidak ada loop refresh.
+  const runRestore = useCallback(() => {
+    setStatus("loading");
+    restoreSession().then((result) => {
+      if (!alive.current) return;
+      if (result.status !== "authenticated") {
+        setStatus(result.status);
         return;
       }
-      setAuthUserState(user);
-      setRoleState(USE_MOCK && readStoredRole() ? readStoredRole() : user.appRole);
+      setAuthUserState(result.user);
+      setRoleState(USE_MOCK && readStoredRole() ? readStoredRole() : result.user.appRole);
       setStatus("authenticated");
     });
-    return () => { alive = false; };
   }, []);
+
+  useEffect(() => {
+    alive.current = true;
+    runRestore();
+    return () => { alive.current = false; };
+  }, [runRestore]);
 
   // Sesi backend berakhir (refresh token ditolak / akun ditangguhkan, lihat
   // lib/api.js) → keluar dari peran dan arahkan ke halaman Masuk.
@@ -79,6 +88,15 @@ export function RoleProvider({ children }) {
     }
     window.addEventListener(SESSION_ENDED_EVENT, onSessionEnded);
     return () => window.removeEventListener(SESSION_ENDED_EVENT, onSessionEnded);
+  }, []);
+
+  // 403 ACCOUNT_PENDING_VERIFICATION dari API → status user ikut diperbarui.
+  useEffect(() => {
+    function onAccountPending() {
+      if (statusRef.current === "authenticated") setAuthUserState(getAuthUser());
+    }
+    window.addEventListener(ACCOUNT_PENDING_EVENT, onAccountPending);
+    return () => window.removeEventListener(ACCOUNT_PENDING_EVENT, onAccountPending);
   }, []);
 
   function setRole(next) {
@@ -105,11 +123,17 @@ export function RoleProvider({ children }) {
     }
   }
 
+  // Ringkasan user tersimpan diperbarui (mis. /verify memuat ulang /me/profile) → ikut ke state.
+  const refreshAuthUser = useCallback(() => {
+    const sessionUser = getAuthUser();
+    if (sessionUser && statusRef.current === "authenticated") setAuthUserState(sessionUser);
+  }, []);
+
   const user = role ? CURRENT_USERS[role] : null;
   const config = role ? ROLES[role] : null;
 
   return (
-    <RoleContext.Provider value={{ role, setRole, user, config, authUser, status }}>
+    <RoleContext.Provider value={{ role, setRole, user, config, authUser, status, retrySession: runRestore, refreshAuthUser }}>
       {children}
     </RoleContext.Provider>
   );

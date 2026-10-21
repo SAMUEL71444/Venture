@@ -8,6 +8,7 @@ import { useRole } from "@/context/RoleContext";
 // (lihat catatan di context/RoleContext.js) — tidak ada middleware Next.js.
 // - belum login   → /login?next=<halaman ini>, lalu kembali ke sini setelah login
 // - baru Keluar   → ke beranda (tujuan yang sama dengan tombol Keluar)
+// - server tidak bisa dihubungi → tetap di sini (SessionLoading menampilkan "Coba lagi")
 // Mengembalikan true bila konten boleh dirender.
 export default function useRequireAuth() {
   const { status } = useRole();

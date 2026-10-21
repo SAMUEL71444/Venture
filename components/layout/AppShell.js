@@ -2,14 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import Sidebar from "@/components/dashboard/SideBar";
 import RoleGuard from "./RoleGuard";
 import SessionLoading from "./SessionLoading";
 import useRequireAuth from "./useRequireAuth";
+import { PendingVerificationBanner, PendingVerificationGate } from "./PendingVerificationNotice";
 import { LogoMark, Wordmark } from "@/components/brand/Logo";
 import useFocusTrap from "@/components/ui/useFocusTrap";
 import { navFor, ROLES } from "@/config/roles";
 import { useRole } from "@/context/RoleContext";
+import { isPendingUser, pendingCanOpen } from "@/lib/auth/pending";
 
 // Shell tunggal buat semua role: sidebar (menu dari navFor(role), user dari
 // context) + canvas konten, dibungkus RoleGuard supaya halaman yang nggak
@@ -55,6 +58,7 @@ export default function AppShell({ children, aside, bare = false }) {
   const { role, user, authUser } = useRole();
   // Semua halaman ber-AppShell wajib login (dijaga di client, lihat useRequireAuth).
   const signedIn = useRequireAuth();
+  const pathname = usePathname();
   const sidebarRef = useRef(null);
 
   const closeMobileNav = () => setMobileNavOpen(false);
@@ -85,6 +89,10 @@ export default function AppShell({ children, aside, bare = false }) {
   const shellUser = authUser
     ? { ...user, name: authUser.name, email: authUser.email || authUser.phone, plan: ROLES[role].label }
     : user;
+
+  // Akun pending: banner di semua halaman; halaman yang butuh endpoint terlarang diganti arahan ke /verify.
+  const pending = isPendingUser(authUser);
+  const gated = pending && !pendingCanOpen(pathname);
 
   return (
     <div className="dash-shell">
@@ -122,11 +130,12 @@ export default function AppShell({ children, aside, bare = false }) {
       {isMobile && mobileNavOpen && <div className="dash-backdrop" onClick={closeMobileNav} aria-hidden="true" />}
 
       <div className="dash-canvas">
-        <div className={`dash-inner ${aside ? "has-aside" : ""}`}>
-          <main className={`dash-main ${bare ? "bare" : ""}`}>
-            <RoleGuard>{children}</RoleGuard>
+        <div className={`dash-inner ${aside && !gated ? "has-aside" : ""}`}>
+          <main className={`dash-main ${bare && !gated ? "bare" : ""}`}>
+            {pending && <PendingVerificationBanner />}
+            <RoleGuard>{gated ? <PendingVerificationGate /> : children}</RoleGuard>
           </main>
-          {aside && <div className="dash-aside">{aside}</div>}
+          {aside && !gated && <div className="dash-aside">{aside}</div>}
         </div>
       </div>
     </div>
