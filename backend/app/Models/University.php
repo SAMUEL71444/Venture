@@ -9,7 +9,7 @@ class University extends Model
 {
     use HasUuids;
 
-    protected $fillable = ['name', 'email_domain', 'city', 'is_partner'];
+    protected $fillable = ['name', 'short_name', 'email_domain', 'city', 'province', 'is_partner'];
 
     protected function casts(): array
     {

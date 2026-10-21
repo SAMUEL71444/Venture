@@ -1,0 +1,702 @@
+[
+  {
+    "name": "Institut Pertanian Bogor",
+    "short_name": "IPB",
+    "city": "Bogor",
+    "province": "Jawa Barat",
+    "email_domain": "ipb.ac.id"
+  },
+  {
+    "name": "Institut Seni Indonesia Yogyakarta",
+    "short_name": "ISI Yogyakarta",
+    "city": "Yogyakarta",
+    "province": "DI Yogyakarta",
+    "email_domain": "isi.ac.id"
+  },
+  {
+    "name": "Institut Teknologi Bandung",
+    "short_name": "ITB",
+    "city": "Bandung",
+    "province": "Jawa Barat",
+    "email_domain": "itb.ac.id"
+  },
+  {
+    "name": "Institut Teknologi Sepuluh Nopember",
+    "short_name": "ITS",
+    "city": "Surabaya",
+    "province": "Jawa Timur",
+    "email_domain": "its.ac.id"
+  },
+  {
+    "name": "Institut Teknologi Sumatera",
+    "short_name": "ITERA",
+    "city": "Bandar Lampung",
+    "province": "Lampung",
+    "email_domain": "itera.ac.id"
+  },
+  {
+    "name": "Politeknik Elektronika Negeri Surabaya",
+    "short_name": "PENS",
+    "city": "Surabaya",
+    "province": "Jawa Timur",
+    "email_domain": "pens.ac.id"
+  },
+  {
+    "name": "Politeknik Negeri Bandung",
+    "short_name": "POLBAN",
+    "city": "Bandung",
+    "province": "Jawa Barat",
+    "email_domain": "polban.ac.id"
+  },
+  {
+    "name": "Politeknik Negeri Jakarta",
+    "short_name": "PNJ",
+    "city": "Depok",
+    "province": "Jawa Barat",
+    "email_domain": "pnj.ac.id"
+  },
+  {
+    "name": "Universitas Ahmad Dahlan",
+    "short_name": "UAD",
+    "city": "Yogyakarta",
+    "province": "DI Yogyakarta",
+    "email_domain": "uad.ac.id"
+  },
+  {
+    "name": "Universitas Airlangga",
+    "short_name": "UNAIR",
+    "city": "Surabaya",
+    "province": "Jawa Timur",
+    "email_domain": "unair.ac.id"
+  },
+  {
+    "name": "Universitas Andalas",
+    "short_name": "UNAND",
+    "city": "Padang",
+    "province": "Sumatera Barat",
+    "email_domain": "unand.ac.id"
+  },
+  {
+    "name": "Universitas Atma Jaya Yogyakarta",
+    "short_name": "UAJY",
+    "city": "Yogyakarta",
+    "province": "DI Yogyakarta",
+    "email_domain": "uajy.ac.id"
+  },
+  {
+    "name": "Universitas Bangka Belitung",
+    "short_name": "UBB",
+    "city": "Pangkalpinang",
+    "province": "Kepulauan Bangka Belitung",
+    "email_domain": "ubb.ac.id"
+  },
+  {
+    "name": "Universitas Bengkulu",
+    "short_name": "UNIB",
+    "city": "Bengkulu",
+    "province": "Bengkulu",
+    "email_domain": "unib.ac.id"
+  },
+  {
+    "name": "Universitas Bina Nusantara",
+    "short_name": "BINUS",
+    "city": "Jakarta Barat",
+    "province": "DKI Jakarta",
+    "email_domain": "binus.ac.id"
+  },
+  {
+    "name": "Universitas Borneo Tarakan",
+    "short_name": "UBT",
+    "city": "Tarakan",
+    "province": "Kalimantan Utara",
+    "email_domain": null
+  },
+  {
+    "name": "Universitas Brawijaya",
+    "short_name": "UB",
+    "city": "Malang",
+    "province": "Jawa Timur",
+    "email_domain": "ub.ac.id"
+  },
+  {
+    "name": "Universitas Cenderawasih",
+    "short_name": "UNCEN",
+    "city": "Jayapura",
+    "province": "Papua",
+    "email_domain": "uncen.ac.id"
+  },
+  {
+    "name": "Universitas Ciputra",
+    "short_name": "UC",
+    "city": "Surabaya",
+    "province": "Jawa Timur",
+    "email_domain": "ciputra.ac.id"
+  },
+  {
+    "name": "Universitas Dian Nuswantoro",
+    "short_name": "UDINUS",
+    "city": "Semarang",
+    "province": "Jawa Tengah",
+    "email_domain": "dinus.ac.id"
+  },
+  {
+    "name": "Universitas Diponegoro",
+    "short_name": "UNDIP",
+    "city": "Semarang",
+    "province": "Jawa Tengah",
+    "email_domain": "undip.ac.id"
+  },
+  {
+    "name": "Universitas Esa Unggul",
+    "short_name": "UEU",
+    "city": "Jakarta Barat",
+    "province": "DKI Jakarta",
+    "email_domain": "esaunggul.ac.id"
+  },
+  {
+    "name": "Universitas Gadjah Mada",
+    "short_name": "UGM",
+    "city": "Yogyakarta",
+    "province": "DI Yogyakarta",
+    "email_domain": "ugm.ac.id"
+  },
+  {
+    "name": "Universitas Gunadarma",
+    "short_name": "UG",
+    "city": "Depok",
+    "province": "Jawa Barat",
+    "email_domain": "gunadarma.ac.id"
+  },
+  {
+    "name": "Universitas Halu Oleo",
+    "short_name": "UHO",
+    "city": "Kendari",
+    "province": "Sulawesi Tenggara",
+    "email_domain": "uho.ac.id"
+  },
+  {
+    "name": "Universitas Hasanuddin",
+    "short_name": "UNHAS",
+    "city": "Makassar",
+    "province": "Sulawesi Selatan",
+    "email_domain": "unhas.ac.id"
+  },
+  {
+    "name": "Universitas Indonesia",
+    "short_name": "UI",
+    "city": "Depok",
+    "province": "Jawa Barat",
+    "email_domain": "ui.ac.id"
+  },
+  {
+    "name": "Universitas Islam Bandung",
+    "short_name": "UNISBA",
+    "city": "Bandung",
+    "province": "Jawa Barat",
+    "email_domain": "unisba.ac.id"
+  },
+  {
+    "name": "Universitas Islam Indonesia",
+    "short_name": "UII",
+    "city": "Yogyakarta",
+    "province": "DI Yogyakarta",
+    "email_domain": "uii.ac.id"
+  },
+  {
+    "name": "Universitas Islam Negeri Alauddin Makassar",
+    "short_name": "UINAM",
+    "city": "Makassar",
+    "province": "Sulawesi Selatan",
+    "email_domain": "uin-alauddin.ac.id"
+  },
+  {
+    "name": "Universitas Islam Negeri Ar-Raniry Banda Aceh",
+    "short_name": "UIN Ar-Raniry",
+    "city": "Banda Aceh",
+    "province": "Aceh",
+    "email_domain": "ar-raniry.ac.id"
+  },
+  {
+    "name": "Universitas Islam Negeri Maulana Malik Ibrahim Malang",
+    "short_name": "UIN Malang",
+    "city": "Malang",
+    "province": "Jawa Timur",
+    "email_domain": "uin-malang.ac.id"
+  },
+  {
+    "name": "Universitas Islam Negeri Sunan Ampel Surabaya",
+    "short_name": "UINSA",
+    "city": "Surabaya",
+    "province": "Jawa Timur",
+    "email_domain": "uinsa.ac.id"
+  },
+  {
+    "name": "Universitas Islam Negeri Sunan Gunung Djati Bandung",
+    "short_name": "UIN SGD",
+    "city": "Bandung",
+    "province": "Jawa Barat",
+    "email_domain": "uinsgd.ac.id"
+  },
+  {
+    "name": "Universitas Islam Negeri Sunan Kalijaga Yogyakarta",
+    "short_name": "UIN Suka",
+    "city": "Yogyakarta",
+    "province": "DI Yogyakarta",
+    "email_domain": "uin-suka.ac.id"
+  },
+  {
+    "name": "Universitas Islam Negeri Syarif Hidayatullah Jakarta",
+    "short_name": "UIN Jakarta",
+    "city": "Tangerang Selatan",
+    "province": "Banten",
+    "email_domain": "uinjkt.ac.id"
+  },
+  {
+    "name": "Universitas Islam Negeri Walisongo Semarang",
+    "short_name": "UIN Walisongo",
+    "city": "Semarang",
+    "province": "Jawa Tengah",
+    "email_domain": "walisongo.ac.id"
+  },
+  {
+    "name": "Universitas Islam Riau",
+    "short_name": "UIR",
+    "city": "Pekanbaru",
+    "province": "Riau",
+    "email_domain": "uir.ac.id"
+  },
+  {
+    "name": "Universitas Islam Sultan Agung",
+    "short_name": "UNISSULA",
+    "city": "Semarang",
+    "province": "Jawa Tengah",
+    "email_domain": "unissula.ac.id"
+  },
+  {
+    "name": "Universitas Jambi",
+    "short_name": "UNJA",
+    "city": "Jambi",
+    "province": "Jambi",
+    "email_domain": "unja.ac.id"
+  },
+  {
+    "name": "Universitas Jember",
+    "short_name": "UNEJ",
+    "city": "Jember",
+    "province": "Jawa Timur",
+    "email_domain": "unej.ac.id"
+  },
+  {
+    "name": "Universitas Jenderal Soedirman",
+    "short_name": "UNSOED",
+    "city": "Purwokerto",
+    "province": "Jawa Tengah",
+    "email_domain": "unsoed.ac.id"
+  },
+  {
+    "name": "Universitas Katolik Indonesia Atma Jaya",
+    "short_name": "Unika Atma Jaya",
+    "city": "Jakarta Selatan",
+    "province": "DKI Jakarta",
+    "email_domain": "atmajaya.ac.id"
+  },
+  {
+    "name": "Universitas Katolik Parahyangan",
+    "short_name": "UNPAR",
+    "city": "Bandung",
+    "province": "Jawa Barat",
+    "email_domain": "unpar.ac.id"
+  },
+  {
+    "name": "Universitas Khairun",
+    "short_name": "UNKHAIR",
+    "city": "Ternate",
+    "province": "Maluku Utara",
+    "email_domain": "unkhair.ac.id"
+  },
+  {
+    "name": "Universitas Kristen Petra",
+    "short_name": "UK Petra",
+    "city": "Surabaya",
+    "province": "Jawa Timur",
+    "email_domain": "petra.ac.id"
+  },
+  {
+    "name": "Universitas Kristen Satya Wacana",
+    "short_name": "UKSW",
+    "city": "Salatiga",
+    "province": "Jawa Tengah",
+    "email_domain": "uksw.edu"
+  },
+  {
+    "name": "Universitas Lambung Mangkurat",
+    "short_name": "ULM",
+    "city": "Banjarmasin",
+    "province": "Kalimantan Selatan",
+    "email_domain": "ulm.ac.id"
+  },
+  {
+    "name": "Universitas Lampung",
+    "short_name": "UNILA",
+    "city": "Bandar Lampung",
+    "province": "Lampung",
+    "email_domain": "unila.ac.id"
+  },
+  {
+    "name": "Universitas Malikussaleh",
+    "short_name": "UNIMAL",
+    "city": "Lhokseumawe",
+    "province": "Aceh",
+    "email_domain": "unimal.ac.id"
+  },
+  {
+    "name": "Universitas Maritim Raja Ali Haji",
+    "short_name": "UMRAH",
+    "city": "Tanjungpinang",
+    "province": "Kepulauan Riau",
+    "email_domain": "umrah.ac.id"
+  },
+  {
+    "name": "Universitas Mataram",
+    "short_name": "UNRAM",
+    "city": "Mataram",
+    "province": "Nusa Tenggara Barat",
+    "email_domain": "unram.ac.id"
+  },
+  {
+    "name": "Universitas Mercu Buana",
+    "short_name": "UMB",
+    "city": "Jakarta Barat",
+    "province": "DKI Jakarta",
+    "email_domain": "mercubuana.ac.id"
+  },
+  {
+    "name": "Universitas Muhammadiyah Malang",
+    "short_name": "UMM",
+    "city": "Malang",
+    "province": "Jawa Timur",
+    "email_domain": "umm.ac.id"
+  },
+  {
+    "name": "Universitas Muhammadiyah Sumatera Utara",
+    "short_name": "UMSU",
+    "city": "Medan",
+    "province": "Sumatera Utara",
+    "email_domain": "umsu.ac.id"
+  },
+  {
+    "name": "Universitas Muhammadiyah Surakarta",
+    "short_name": "UMS",
+    "city": "Surakarta",
+    "province": "Jawa Tengah",
+    "email_domain": "ums.ac.id"
+  },
+  {
+    "name": "Universitas Muhammadiyah Yogyakarta",
+    "short_name": "UMY",
+    "city": "Yogyakarta",
+    "province": "DI Yogyakarta",
+    "email_domain": "umy.ac.id"
+  },
+  {
+    "name": "Universitas Mulawarman",
+    "short_name": "UNMUL",
+    "city": "Samarinda",
+    "province": "Kalimantan Timur",
+    "email_domain": "unmul.ac.id"
+  },
+  {
+    "name": "Universitas Multimedia Nusantara",
+    "short_name": "UMN",
+    "city": "Tangerang",
+    "province": "Banten",
+    "email_domain": "umn.ac.id"
+  },
+  {
+    "name": "Universitas Musamus",
+    "short_name": "UNMUS",
+    "city": "Merauke",
+    "province": "Papua Selatan",
+    "email_domain": "unmus.ac.id"
+  },
+  {
+    "name": "Universitas Negeri Gorontalo",
+    "short_name": "UNG",
+    "city": "Gorontalo",
+    "province": "Gorontalo",
+    "email_domain": "ung.ac.id"
+  },
+  {
+    "name": "Universitas Negeri Jakarta",
+    "short_name": "UNJ",
+    "city": "Jakarta Timur",
+    "province": "DKI Jakarta",
+    "email_domain": "unj.ac.id"
+  },
+  {
+    "name": "Universitas Negeri Makassar",
+    "short_name": "UNM",
+    "city": "Makassar",
+    "province": "Sulawesi Selatan",
+    "email_domain": "unm.ac.id"
+  },
+  {
+    "name": "Universitas Negeri Malang",
+    "short_name": "UM",
+    "city": "Malang",
+    "province": "Jawa Timur",
+    "email_domain": "um.ac.id"
+  },
+  {
+    "name": "Universitas Negeri Medan",
+    "short_name": "UNIMED",
+    "city": "Medan",
+    "province": "Sumatera Utara",
+    "email_domain": "unimed.ac.id"
+  },
+  {
+    "name": "Universitas Negeri Padang",
+    "short_name": "UNP",
+    "city": "Padang",
+    "province": "Sumatera Barat",
+    "email_domain": "unp.ac.id"
+  },
+  {
+    "name": "Universitas Negeri Semarang",
+    "short_name": "UNNES",
+    "city": "Semarang",
+    "province": "Jawa Tengah",
+    "email_domain": "unnes.ac.id"
+  },
+  {
+    "name": "Universitas Negeri Surabaya",
+    "short_name": "UNESA",
+    "city": "Surabaya",
+    "province": "Jawa Timur",
+    "email_domain": "unesa.ac.id"
+  },
+  {
+    "name": "Universitas Negeri Yogyakarta",
+    "short_name": "UNY",
+    "city": "Yogyakarta",
+    "province": "DI Yogyakarta",
+    "email_domain": "uny.ac.id"
+  },
+  {
+    "name": "Universitas Nusa Cendana",
+    "short_name": "UNDANA",
+    "city": "Kupang",
+    "province": "Nusa Tenggara Timur",
+    "email_domain": "undana.ac.id"
+  },
+  {
+    "name": "Universitas Padjadjaran",
+    "short_name": "UNPAD",
+    "city": "Bandung",
+    "province": "Jawa Barat",
+    "email_domain": "unpad.ac.id"
+  },
+  {
+    "name": "Universitas Palangka Raya",
+    "short_name": "UPR",
+    "city": "Palangka Raya",
+    "province": "Kalimantan Tengah",
+    "email_domain": "upr.ac.id"
+  },
+  {
+    "name": "Universitas Pancasila",
+    "short_name": "UP",
+    "city": "Jakarta Selatan",
+    "province": "DKI Jakarta",
+    "email_domain": "univpancasila.ac.id"
+  },
+  {
+    "name": "Universitas Papua",
+    "short_name": "UNIPA",
+    "city": "Manokwari",
+    "province": "Papua Barat",
+    "email_domain": "unipa.ac.id"
+  },
+  {
+    "name": "Universitas Pattimura",
+    "short_name": "UNPATTI",
+    "city": "Ambon",
+    "province": "Maluku",
+    "email_domain": "unpatti.ac.id"
+  },
+  {
+    "name": "Universitas Pelita Harapan",
+    "short_name": "UPH",
+    "city": "Tangerang",
+    "province": "Banten",
+    "email_domain": "uph.edu"
+  },
+  {
+    "name": "Universitas Pembangunan Nasional Veteran Jakarta",
+    "short_name": "UPNVJ",
+    "city": "Jakarta Selatan",
+    "province": "DKI Jakarta",
+    "email_domain": "upnvj.ac.id"
+  },
+  {
+    "name": "Universitas Pembangunan Nasional Veteran Jawa Timur",
+    "short_name": "UPNVJT",
+    "city": "Surabaya",
+    "province": "Jawa Timur",
+    "email_domain": "upnjatim.ac.id"
+  },
+  {
+    "name": "Universitas Pembangunan Nasional Veteran Yogyakarta",
+    "short_name": "UPNVY",
+    "city": "Yogyakarta",
+    "province": "DI Yogyakarta",
+    "email_domain": "upnyk.ac.id"
+  },
+  {
+    "name": "Universitas Pendidikan Ganesha",
+    "short_name": "UNDIKSHA",
+    "city": "Singaraja",
+    "province": "Bali",
+    "email_domain": "undiksha.ac.id"
+  },
+  {
+    "name": "Universitas Pendidikan Indonesia",
+    "short_name": "UPI",
+    "city": "Bandung",
+    "province": "Jawa Barat",
+    "email_domain": "upi.edu"
+  },
+  {
+    "name": "Universitas Prasetiya Mulya",
+    "short_name": "Prasmul",
+    "city": "Tangerang",
+    "province": "Banten",
+    "email_domain": "prasetiyamulya.ac.id"
+  },
+  {
+    "name": "Universitas Riau",
+    "short_name": "UNRI",
+    "city": "Pekanbaru",
+    "province": "Riau",
+    "email_domain": "unri.ac.id"
+  },
+  {
+    "name": "Universitas Sam Ratulangi",
+    "short_name": "UNSRAT",
+    "city": "Manado",
+    "province": "Sulawesi Utara",
+    "email_domain": "unsrat.ac.id"
+  },
+  {
+    "name": "Universitas Sebelas Maret",
+    "short_name": "UNS",
+    "city": "Surakarta",
+    "province": "Jawa Tengah",
+    "email_domain": "uns.ac.id"
+  },
+  {
+    "name": "Universitas Siliwangi",
+    "short_name": "UNSIL",
+    "city": "Tasikmalaya",
+    "province": "Jawa Barat",
+    "email_domain": "unsil.ac.id"
+  },
+  {
+    "name": "Universitas Sriwijaya",
+    "short_name": "UNSRI",
+    "city": "Palembang",
+    "province": "Sumatera Selatan",
+    "email_domain": "unsri.ac.id"
+  },
+  {
+    "name": "Universitas Sulawesi Barat",
+    "short_name": "UNSULBAR",
+    "city": "Majene",
+    "province": "Sulawesi Barat",
+    "email_domain": "unsulbar.ac.id"
+  },
+  {
+    "name": "Universitas Sultan Ageng Tirtayasa",
+    "short_name": "UNTIRTA",
+    "city": "Serang",
+    "province": "Banten",
+    "email_domain": "untirta.ac.id"
+  },
+  {
+    "name": "Universitas Sumatera Utara",
+    "short_name": "USU",
+    "city": "Medan",
+    "province": "Sumatera Utara",
+    "email_domain": "usu.ac.id"
+  },
+  {
+    "name": "Universitas Surabaya",
+    "short_name": "UBAYA",
+    "city": "Surabaya",
+    "province": "Jawa Timur",
+    "email_domain": "ubaya.ac.id"
+  },
+  {
+    "name": "Universitas Syiah Kuala",
+    "short_name": "USK",
+    "city": "Banda Aceh",
+    "province": "Aceh",
+    "email_domain": "usk.ac.id"
+  },
+  {
+    "name": "Universitas Tadulako",
+    "short_name": "UNTAD",
+    "city": "Palu",
+    "province": "Sulawesi Tengah",
+    "email_domain": "untad.ac.id"
+  },
+  {
+    "name": "Universitas Tanjungpura",
+    "short_name": "UNTAN",
+    "city": "Pontianak",
+    "province": "Kalimantan Barat",
+    "email_domain": "untan.ac.id"
+  },
+  {
+    "name": "Universitas Tarumanagara",
+    "short_name": "UNTAR",
+    "city": "Jakarta Barat",
+    "province": "DKI Jakarta",
+    "email_domain": "untar.ac.id"
+  },
+  {
+    "name": "Universitas Telkom",
+    "short_name": "Tel-U",
+    "city": "Bandung",
+    "province": "Jawa Barat",
+    "email_domain": "telkomuniversity.ac.id"
+  },
+  {
+    "name": "Universitas Terbuka",
+    "short_name": "UT",
+    "city": "Tangerang Selatan",
+    "province": "Banten",
+    "email_domain": "ut.ac.id"
+  },
+  {
+    "name": "Universitas Trisakti",
+    "short_name": "USAKTI",
+    "city": "Jakarta Barat",
+    "province": "DKI Jakarta",
+    "email_domain": "trisakti.ac.id"
+  },
+  {
+    "name": "Universitas Trunojoyo Madura",
+    "short_name": "UTM",
+    "city": "Bangkalan",
+    "province": "Jawa Timur",
+    "email_domain": "trunojoyo.ac.id"
+  },
+  {
+    "name": "Universitas Udayana",
+    "short_name": "UNUD",
+    "city": "Denpasar",
+    "province": "Bali",
+    "email_domain": "unud.ac.id"
+  }
+]

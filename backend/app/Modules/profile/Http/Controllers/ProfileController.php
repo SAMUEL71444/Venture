@@ -51,7 +51,7 @@ final class ProfileController extends Controller
     {
         return ApiResponse::success(University::query()
             ->orderBy('name')
-            ->get(['id', 'name', 'email_domain', 'city', 'is_partner']));
+            ->get(['id', 'name', 'short_name', 'city']));
     }
 
     public function categories()

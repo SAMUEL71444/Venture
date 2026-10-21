@@ -24,6 +24,11 @@ final class VerificationController extends Controller
     {
         $profile = $request->user()->studentProfile;
 
+        // Universitas di luar daftar / tanpa domain email kampus: verifikasi lewat unggah KTM.
+        if ($profile && ! $profile->university?->email_domain) {
+            throw new BusinessRuleViolation('Campus email verification is not available for this university. Upload your KTM instead.', ['verification_method' => 'KTM'], 'CAMPUS_EMAIL_NOT_AVAILABLE');
+        }
+
         if (! $profile?->campus_email) {
             throw new BusinessRuleViolation('Campus email is not set for this student profile.', [], 'CAMPUS_EMAIL_NOT_SET');
         }
@@ -121,6 +126,7 @@ final class VerificationController extends Controller
                 'verification_status' => $profile->verification_status,
                 'user' => $profile->user,
                 'university_id' => $profile->university_id,
+                'university_name_custom' => $profile->university_name_custom,
                 'created_at' => $profile->created_at,
             ]);
 

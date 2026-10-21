@@ -99,13 +99,19 @@ final class AuthController extends Controller
             'campus_email' => $request->filled('campus_email')
                 ? Str::lower(trim((string) $request->input('campus_email')))
                 : null,
+            // Nama universitas di luar daftar: spasi dirapikan, kosong = tidak diisi.
+            'university_name_custom' => is_string($custom = $request->input('university_name_custom'))
+                ? (trim(preg_replace('/\s+/u', ' ', $custom)) ?: null)
+                : $custom,
         ]);
 
         $input = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             ...$this->contactRules($request),
             'password' => ['required', 'string', 'min:8', 'max:128'],
-            'university_id' => ['required', 'uuid', 'exists:universities,id'],
+            // Tepat salah satu: universitas dari daftar ATAU nama yang diketik sendiri.
+            'university_id' => ['nullable', 'required_without:university_name_custom', 'prohibits:university_name_custom', 'uuid', 'exists:universities,id'],
+            'university_name_custom' => ['nullable', 'required_without:university_id', 'string', 'max:150'],
             'campus_email' => ['nullable', 'email:rfc', 'max:255', 'unique:student_profiles,campus_email'],
             'nim' => ['nullable', 'string', 'max:80'],
             'major' => ['nullable', 'string', 'max:255'],
@@ -113,10 +119,15 @@ final class AuthController extends Controller
         ]);
 
         if (! empty($input['campus_email'])) {
-            $university = University::query()->findOrFail($input['university_id']);
+            $university = isset($input['university_id']) ? University::query()->findOrFail($input['university_id']) : null;
             $campusDomain = Str::lower(Str::afterLast($input['campus_email'], '@'));
 
-            if (! hash_equals(Str::lower($university->email_domain), $campusDomain)) {
+            // Universitas di luar daftar / tanpa domain email kampus: verifikasi lewat unggah KTM.
+            if (! $university?->email_domain) {
+                throw new BusinessRuleViolation('Campus email verification is not available for this university. Upload your KTM instead.', ['verification_method' => 'KTM'], 'CAMPUS_EMAIL_NOT_AVAILABLE');
+            }
+
+            if (! $this->campusDomainMatches($campusDomain, $university->email_domain)) {
                 throw new BusinessRuleViolation('Campus email domain does not match the selected university.', [], 'CAMPUS_EMAIL_DOMAIN_MISMATCH');
             }
         }
@@ -134,7 +145,8 @@ final class AuthController extends Controller
 
             $profile = StudentProfile::query()->create([
                 'user_id' => $user->id,
-                'university_id' => $input['university_id'],
+                'university_id' => $input['university_id'] ?? null,
+                'university_name_custom' => $input['university_name_custom'] ?? null,
                 'campus_email' => isset($input['campus_email']) ? Str::lower($input['campus_email']) : null,
                 'nim' => $input['nim'] ?? null,
                 'major' => $input['major'] ?? null,
@@ -273,6 +285,17 @@ final class AuthController extends Controller
             'email_verified_at' => $input['channel'] === OtpService::CHANNEL_EMAIL ? now() : null,
             'phone_verified_at' => $input['channel'] === OtpService::CHANNEL_WHATSAPP ? now() : null,
         ];
+    }
+
+    /**
+     * Domain email kampus cocok bila sama persis dengan email_domain universitas
+     * atau subdomainnya (mis. mahasiswa.itb.ac.id ↔ itb.ac.id; evilitb.ac.id tidak).
+     */
+    private function campusDomainMatches(string $emailDomain, string $universityDomain): bool
+    {
+        $universityDomain = Str::lower($universityDomain);
+
+        return $emailDomain === $universityDomain || str_ends_with($emailDomain, '.'.$universityDomain);
     }
 
     private function registrationResponse(array $result): array

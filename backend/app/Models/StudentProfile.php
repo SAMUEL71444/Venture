@@ -13,7 +13,7 @@ class StudentProfile extends Model
     use HasUuids;
 
     protected $fillable = [
-        'user_id', 'university_id', 'nim', 'major', 'semester', 'campus_email', 'campus_email_verified_at', 'ktm_file_url',
+        'user_id', 'university_id', 'university_name_custom', 'nim', 'major', 'semester', 'campus_email', 'campus_email_verified_at', 'ktm_file_url',
         'verification_status', 'verified_by', 'bio', 'rating_avg', 'completed_contracts_count',
         'active_contracts_count', 'is_available',
     ];
