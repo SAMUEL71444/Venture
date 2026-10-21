@@ -1,0 +1,226 @@
+/* Halaman Login, Daftar, dan Verifikasi Email (components/auth/*). Diimpor
+   hanya oleh ketiga page tersebut; kelas diawali au- supaya tidak bertabrakan
+   dengan halaman lain. Semua warna memakai token tema (:root /
+   :root[data-theme="dark"] di globals.css), jadi mode gelap otomatis ikut.
+
+   RESPONSIF — mobile-first, breakpoint = skala globals.css bagian 40
+   (xs <480 · sm 640 · md 768 · lg 1024 · 2xl 1536). HP: satu kolom, form
+   memenuhi lebar dengan padding nyaman; sm: form jadi kartu; lg: panel brand
+   di kiri; 2xl: panel brand dibatasi lebarnya. Semua kontrol >= 44px,
+   paragraf 16px & teks pendukung >= 14px di HP, padding safe-area di tepi. */
+
+.au { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: 1fr; background: var(--bg); color: var(--text); }
+@media (min-width: 1024px) { .au { grid-template-columns: minmax(380px, .85fr) 1.15fr; } }
+@media (min-width: 1536px) { .au { grid-template-columns: minmax(520px, 720px) 1fr; } }
+
+/* --- panel brand (desktop) --- */
+.au-aside {
+  display: none; position: sticky; top: 0; height: 100vh; height: 100dvh; overflow: hidden;
+  flex-direction: column; justify-content: space-between; gap: 32px;
+  padding: clamp(32px, 3.5vw, 56px) clamp(32px, 4vw, 64px); background: var(--primary-darker); color: #fff;
+}
+@media (min-width: 1024px) { .au-aside { display: flex; } }
+/* Lapisan dekorasi: absolute & di luar alur flex, supaya logo tetap di atas,
+   isi di tengah, catatan di bawah. */
+.au-aside-blob { position: absolute; inset: 0; pointer-events: none; }
+.au-aside-blob::before, .au-aside-blob::after { content: ""; position: absolute; border-radius: 50%; filter: blur(70px); }
+.au-aside-blob::before { width: 360px; height: 360px; right: -140px; top: -120px; background: var(--primary); opacity: .45; }
+.au-aside-blob::after { width: 300px; height: 300px; left: -120px; bottom: -120px; background: var(--sky); opacity: .22; }
+.au-aside > :not(.au-aside-blob) { position: relative; }
+.au-aside-title { margin: 0; max-width: 440px; font-size: clamp(1.875rem, 1.2rem + 1.2vw, 2.5rem); line-height: 1.15; font-weight: 800; letter-spacing: -0.02em; }
+.au-aside-text { margin: 16px 0 0; max-width: 420px; font-size: 16px; line-height: 1.6; color: #DBEAFE; }
+.au-aside-points { list-style: none; padding: 0; margin: 28px 0 0; display: grid; gap: 14px; max-width: 420px; }
+.au-aside-points li { display: flex; align-items: flex-start; gap: 12px; font-size: 15px; line-height: 1.5; color: #fff; }
+.au-aside-check { width: 22px; height: 22px; flex-shrink: 0; display: grid; place-items: center; border-radius: 999px; background: rgba(255,255,255,.14); color: var(--sky); margin-top: 1px; }
+.au-aside-foot { margin: 0; font-size: 13px; color: #DBEAFE; opacity: .8; }
+
+.au-brand { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; text-decoration: none; }
+.au-brand .brand-wordmark { font-size: 19px; }
+.au-brand-light .brand-wordmark { color: #fff; }
+.au-brand-light .brand-wordmark-accent { color: var(--sky); }
+.au-brand:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 8px; }
+
+/* --- kolom form --- */
+.au-main { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; min-width: 0; }
+.au-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: max(12px, var(--safe-top)) max(20px, var(--safe-right)) 8px max(20px, var(--safe-left));
+}
+.au-top-link { margin: 0; font-size: 15px; line-height: 1.3; color: var(--text-muted); text-align: right; }
+.au-top-link .link-btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 2px; font-size: inherit; }
+@media (min-width: 1024px) {
+  .au-top { justify-content: flex-end; padding: max(20px, var(--safe-top)) 40px 8px; }
+  .au-brand-mobile { display: none; }
+}
+.au-body { flex: 1; display: flex; justify-content: center; align-items: flex-start; padding: 8px max(20px, var(--safe-right)) 32px max(20px, var(--safe-left)); }
+@media (max-width: 479.98px) {
+  /* HP kecil: padding 16px supaya 6 kotak OTP tetap >= 44px di layar 320px. */
+  .au-top { padding-left: max(16px, var(--safe-left)); padding-right: max(16px, var(--safe-right)); }
+  .au-body { padding-left: max(16px, var(--safe-left)); padding-right: max(16px, var(--safe-right)); }
+}
+@media (min-width: 1024px) { .au-body { align-items: center; padding: 8px 40px 40px; } }
+.au-card { width: 100%; max-width: 440px; }
+@media (min-width: 640px) {
+  .au-card { max-width: 480px; padding: 36px 40px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-md); }
+}
+
+.au-title { margin: 0; font-size: clamp(1.5rem, 1.3rem + 1vw, 1.75rem); line-height: 1.2; font-weight: 800; letter-spacing: -0.01em; }
+.au-sub { margin: 8px 0 0; font-size: 16px; line-height: 1.55; color: var(--text-muted); }
+@media (min-width: 768px) { .au-sub { font-size: 15px; } .au-steps li { font-size: 12.5px; } }
+.au-sub .link-btn { font-size: inherit; }
+.au-form { margin-top: 24px; }
+.au-form .field label { font-size: 14px; }
+.au-label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 7px; }
+.au-label-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+.au-label-row label { margin-bottom: 0 !important; }
+.au-forgot { display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; }
+
+/* 16px mencegah zoom otomatis iOS saat input difokus. */
+.au-input { min-height: 46px; font-size: 16px; }
+.au-input[aria-invalid="true"] { border-color: var(--error); }
+.au-input[aria-invalid="true"]:focus { outline-color: var(--error); }
+
+.au-error { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px 6px; margin: 7px 0 0; font-size: 14px; line-height: 1.45; color: var(--error); }
+.au-error svg { flex-shrink: 0; margin-top: 2px; }
+.au-error-link { background: none; border: none; padding: 0; font: inherit; font-weight: 700; color: var(--error); text-decoration: underline; cursor: pointer; }
+.au-hint { margin: 10px 0 0; font-size: 14px; line-height: 1.5; color: var(--text-muted); text-align: center; }
+.au-hint-left { text-align: left; margin-top: 8px; }
+
+/* --- field password + tombol tampilkan/sembunyikan --- */
+.au-pass { position: relative; }
+.au-pass .au-input { padding-right: 52px; }
+/* Sembunyikan ikon reveal bawaan browser (Edge/IE) supaya tidak ada dua ikon mata. */
+.au-pass input::-ms-reveal, .au-pass input::-ms-clear { display: none; }
+.au-pass-toggle {
+  position: absolute; top: 50%; right: 4px; transform: translateY(-50%);
+  width: 44px; height: 44px; display: grid; place-items: center; padding: 0;
+  border: none; border-radius: 8px; background: transparent; color: var(--text-muted); cursor: pointer;
+  transition: background .15s, color .15s;
+}
+@media (hover: hover) { .au-pass-toggle:hover { background: var(--bg-hover); color: var(--text); } }
+.au-pass-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.au-pass-toggle:disabled { opacity: .5; cursor: not-allowed; }
+
+/* --- pilih peran (login) --- */
+.au-roles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; }
+.au-role {
+  min-height: 44px; padding: 8px 6px; border: 1px solid transparent; border-radius: 9px; background: transparent;
+  font: inherit; font-size: 14px; font-weight: 600; line-height: 1.25; color: var(--text-muted); cursor: pointer; transition: background .15s, color .15s;
+}
+@media (hover: hover) { .au-role:hover { color: var(--text); } }
+.au-role.selected { background: var(--surface); color: var(--primary-dark); border-color: var(--border); box-shadow: var(--shadow-sm); }
+.au-role:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+/* --- checkbox --- */
+.au-check { display: flex; align-items: flex-start; gap: 10px; min-height: 44px; padding: 10px 0; margin: 0 0 12px; font-size: 15px; line-height: 1.5; color: var(--text); cursor: pointer; }
+.au-check input { width: 18px; height: 18px; margin: 2px 0 0; flex-shrink: 0; accent-color: var(--primary); cursor: pointer; }
+.au-check .link-btn { font-size: inherit; }
+
+/* --- tombol submit + loading --- */
+.au-submit { min-height: 48px; border-radius: 10px; }
+.au-spin { animation: au-spin .8s linear infinite; }
+@keyframes au-spin { to { transform: rotate(360deg); } }
+
+/* --- banner pesan form --- */
+.au-alert { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 18px; padding: 12px 14px; border-radius: 10px; font-size: 14px; line-height: 1.5; color: var(--text); }
+.au-alert-icon { flex-shrink: 0; margin-top: 1px; }
+.au-alert-body { min-width: 0; }
+.au-alert-title { font-weight: 700; }
+.au-alert-text { margin-top: 2px; }
+.au-alert-action { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+.au-alert.error { background: var(--error-bg); }
+.au-alert.error .au-alert-icon { color: var(--error); }
+.au-alert.warning { background: var(--warning-bg); }
+.au-alert.warning .au-alert-icon { color: var(--warning); }
+.au-alert.success { background: var(--success-bg); }
+.au-alert.success .au-alert-icon { color: var(--success); }
+.au-alert.info { background: var(--info-bg); }
+.au-alert.info .au-alert-icon { color: var(--info); }
+
+/* --- langkah pendaftaran --- */
+.au-steps { list-style: none; padding: 0; margin: 0 0 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.au-steps li { display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 1.3; font-weight: 600; color: var(--text-muted); }
+.au-steps-bar { height: 4px; border-radius: 4px; background: var(--border); }
+.au-steps li.done .au-steps-bar, .au-steps li.active .au-steps-bar { background: var(--primary); }
+.au-steps li.active { color: var(--primary-dark); }
+
+/* --- kekuatan password --- */
+.au-strength { margin-top: 10px; }
+.au-strength-head { display: flex; align-items: center; gap: 12px; }
+.au-strength-bar { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.au-strength-bar span { height: 4px; border-radius: 4px; background: var(--border); transition: background .2s ease; }
+.au-strength-bar.lvl-1 span:nth-child(1) { background: var(--error); }
+.au-strength-bar.lvl-2 span:nth-child(-n+2) { background: var(--warning); }
+.au-strength-bar.lvl-3 span:nth-child(-n+3) { background: var(--success); }
+.au-strength-bar.lvl-4 span { background: var(--success); }
+.au-strength-label { font-size: 14px; color: var(--text-muted); white-space: nowrap; }
+.au-rules { list-style: none; padding: 0; margin: 10px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+@media (max-width: 479.98px) { .au-rules { grid-template-columns: 1fr; } }
+.au-rules li { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-muted); transition: color .15s; }
+.au-rules li svg { flex-shrink: 0; color: var(--text-faint); }
+.au-rules li.ok { color: var(--text); }
+.au-rules li.ok svg { color: var(--success); }
+
+/* --- OTP --- */
+.au-otp { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; max-width: 360px; }
+.au-otp-box {
+  width: 100%; min-width: 0; height: 56px; padding: 0; text-align: center;
+  font: inherit; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;
+  border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface); color: var(--text); caret-color: var(--primary);
+  transition: border-color .15s, background .15s;
+}
+.au-otp-box:focus { outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary); }
+.au-otp.invalid .au-otp-box { border-color: var(--error); }
+.au-otp.invalid { animation: au-shake .32s ease; }
+.au-otp-box:disabled { background: var(--bg); color: var(--text-muted); cursor: not-allowed; }
+@media (max-width: 479.98px) { .au-otp { gap: 4px; } }
+@keyframes au-shake { 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
+
+.au-badge-icon { width: 48px; height: 48px; margin-bottom: 16px; display: grid; place-items: center; border-radius: 14px; background: var(--primary-light); color: var(--primary-dark); }
+.au-email { color: var(--text); word-break: break-all; }
+.au-why { display: flex; align-items: flex-start; gap: 10px; margin-top: 18px; padding: 12px 14px; border-radius: 10px; background: var(--primary-tint); border: 1px solid var(--primary-light); font-size: 16px; line-height: 1.55; }
+@media (min-width: 768px) { .au-why { font-size: 14px; } }
+.au-why svg { flex-shrink: 0; margin-top: 1px; color: var(--primary); }
+.au-why p { margin: 0; }
+.au-resend { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 8px; margin-top: 14px; font-size: 14px; color: var(--text-muted); }
+.au-resend .btn { min-height: 44px; }
+
+/* panel "Mode demo" (hanya selama backend sementara dipakai) */
+.au-demo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 12px; border: 1px dashed var(--border-strong); border-radius: 10px; font-size: 14px; color: var(--text-muted); }
+.au-demo-tag { padding: 2px 8px; border-radius: 999px; background: var(--warning-bg); color: var(--text); font-size: 13px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
+.au-demo-code { color: var(--text); font-size: 15px; letter-spacing: .2em; font-variant-numeric: tabular-nums; }
+.au-demo-hint { margin: 12px 0 0; text-align: center; font-size: 14px; color: var(--text-muted); }
+.au-demo-hint .link-btn { font-size: inherit; }
+
+.au-success { text-align: center; }
+.au-success-icon { display: inline-grid; place-items: center; width: 76px; height: 76px; margin-bottom: 18px; border-radius: 999px; background: var(--success-bg); color: var(--success); animation: au-pop .35s cubic-bezier(.2, .8, .3, 1.2); }
+.au-success .btn { margin-top: 24px; }
+@keyframes au-pop { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+.au-loading-line { display: flex; align-items: center; gap: 8px; }
+
+/* --- elemen trust & footer --- */
+.au-switch { margin: 18px 0 0; text-align: center; font-size: 15px; color: var(--text-muted); }
+.au-switch .link-btn { font-size: inherit; }
+.au-secure { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0 6px; margin: 24px 0 0; padding-top: 10px; border-top: 1px solid var(--border); font-size: 14px; color: var(--text-muted); }
+.au-secure svg { color: var(--success); }
+.au-secure .link-btn { display: inline-flex; align-items: center; min-height: 44px; font-size: inherit; }
+.au-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; padding: 12px max(20px, var(--safe-right)) calc(16px + var(--safe-bottom)) max(20px, var(--safe-left)); font-size: 14px; color: var(--text-muted); }
+@media (min-width: 1024px) { .au-foot { padding: 12px 40px calc(24px + var(--safe-bottom)); } }
+.au-foot nav { display: flex; flex-wrap: wrap; gap: 0 16px; }
+.au-foot-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0; background: none; border: none; font: inherit; color: var(--text-muted); text-decoration: none; cursor: pointer; }
+@media (hover: hover) { .au-foot-link:hover { color: var(--primary-dark); text-decoration: underline; } }
+.au-foot-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+
+/* --- modal kebijakan --- */
+.au-policy section h3 { margin: 18px 0 6px; font-size: 15px; font-weight: 700; }
+.au-policy section p { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-muted); }
+.au-policy-note { margin: 18px 0 0; font-size: 14px; color: var(--text-muted); }
+.au-policy .btn { margin-top: 16px; }
+
+/* Di HP teks tautan utama 16px — ditaruh setelah deklarasi dasarnya supaya menang urutan. */
+@media (max-width: 767.98px) { .au-top-link, .au-switch { font-size: 16px; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .au-otp.invalid, .au-success-icon { animation: none; }
+  .au-strength-bar span, .au-pass-toggle, .au-role { transition: none; }
+}
