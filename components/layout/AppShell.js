@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/dashboard/SideBar";
 import RoleGuard from "./RoleGuard";
+import SessionLoading from "./SessionLoading";
+import useRequireAuth from "./useRequireAuth";
 import { LogoMark, Wordmark } from "@/components/brand/Logo";
 import useFocusTrap from "@/components/ui/useFocusTrap";
-import { navFor } from "@/config/roles";
+import { navFor, ROLES } from "@/config/roles";
 import { useRole } from "@/context/RoleContext";
 
 // Shell tunggal buat semua role: sidebar (menu dari navFor(role), user dari
@@ -50,7 +52,9 @@ export default function AppShell({ children, aside, bare = false }) {
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window === "undefined" || matches(DESKTOP_QUERY));
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
-  const { role, user } = useRole();
+  const { role, user, authUser } = useRole();
+  // Semua halaman ber-AppShell wajib login (dijaga di client, lihat useRequireAuth).
+  const signedIn = useRequireAuth();
   const sidebarRef = useRef(null);
 
   const closeMobileNav = () => setMobileNavOpen(false);
@@ -69,10 +73,18 @@ export default function AppShell({ children, aside, bare = false }) {
     return () => { document.body.style.overflow = prev; };
   }, [isMobile, mobileNavOpen]);
 
+  if (!signedIn) return <SessionLoading />;
+
   // Sekejap di render pertama sebelum RoleProvider sempat baca localStorage
   // (lihat context/RoleContext.js) — dibiarkan kosong daripada nge-crash
   // karena `user`/`navFor(null)` belum ada isinya.
   if (!role || !user) return null;
+
+  // Nama, kontak & peran di sidebar/popup profil dari user yang login; sisanya
+  // (mis. warna avatar) tetap dari data mock.
+  const shellUser = authUser
+    ? { ...user, name: authUser.name, email: authUser.email || authUser.phone, plan: ROLES[role].label }
+    : user;
 
   return (
     <div className="dash-shell">
@@ -105,7 +117,7 @@ export default function AppShell({ children, aside, bare = false }) {
         onToggle={isMobile ? closeMobileNav : () => setSidebarOpen((v) => !v)}
         onNavigate={isMobile ? closeMobileNav : undefined}
         navItems={navFor(role)}
-        user={user}
+        user={shellUser}
       />
       {isMobile && mobileNavOpen && <div className="dash-backdrop" onClick={closeMobileNav} aria-hidden="true" />}
 

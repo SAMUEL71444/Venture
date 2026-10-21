@@ -5,6 +5,9 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRole } from "@/context/RoleContext";
+import { ROLES } from "@/config/roles";
+import useGuestOnly from "@/components/auth/useGuestOnly";
+import SessionLoading from "@/components/layout/SessionLoading";
 import AuthShell, { usePolicy } from "@/components/auth/AuthShell";
 import ContactField from "@/components/auth/ContactField";
 import PasswordInput from "@/components/auth/PasswordInput";
@@ -57,6 +60,8 @@ const TYPES = {
   },
 };
 
+const homeOf = (appRole) => ROLES[appRole].home;
+
 function RegisterContent() {
   const searchParams = useSearchParams();
   const type = TYPES[searchParams.get("type")] ? searchParams.get("type") : "umkm";
@@ -68,6 +73,8 @@ function RegisterContent() {
   useEffect(() => {
     setProof(wantsDetails ? readProof(type) : null);
   }, [type, wantsDetails]);
+
+  if (useGuestOnly(homeOf)) return <SessionLoading />;
 
   return (
     <AuthShell aside={t.aside} topLink={{ text: "Sudah punya akun?", label: "Masuk", href: "/login" }}>

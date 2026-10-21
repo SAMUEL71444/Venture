@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/Icon";
 import { ROLES } from "@/config/roles";
 import { useRole } from "@/context/RoleContext";
+import { USE_MOCK } from "@/lib/auth/api";
 
 // SHOW_ROLE_SWITCHER: true buat prototipe ini, biar reusability antar role
 // gampang dicek tanpa backend/login beneran. Set `false` di sini kalau mau
 // disembunyikan tanpa mencabut komponennya.
-const SHOW_ROLE_SWITCHER = null;
+// Sejak auth asli tersambung: hanya tampil di mode demo (NEXT_PUBLIC_AUTH_MOCK=true).
+const SHOW_ROLE_SWITCHER = USE_MOCK;
 
 // Pil kecil pojok KIRI bawah (kanan bawah sudah dipakai bubble chat, lihat
 // components/messages/ChatWidget.js) — "Lihat sebagai: <role>". Klik role

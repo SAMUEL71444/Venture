@@ -1,27 +1,23 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import ProjectsEmptyState from "@/components/projects/ProjectsEmptyState";
+import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { canAccess } from "@/config/roles";
 import { useRole } from "@/context/RoleContext";
 
 // Ganjal konten halaman kalau role yang sedang login nggak boleh buka
 // pathname ini (lihat ROUTE_PERMISSIONS di config/roles.js). Dipakai di
-// dalam AppShell, jadi sidebar & popup profil tetap kelihatan normal —
-// cuma area kontennya yang diganti pesan ini.
+// dalam AppShell. Role yang tidak berhak diarahkan ke dashboard miliknya
+// (ROLES[role].home); kontennya tidak dirender sama sekali.
 export default function RoleGuard({ children }) {
-  const { role } = useRole();
+  const { role, config } = useRole();
   const pathname = usePathname();
+  const router = useRouter();
+  const allowed = !role || canAccess(role, pathname);
 
-  if (!role || canAccess(role, pathname)) return children;
+  useEffect(() => {
+    if (!allowed) router.replace(config?.home || "/dashboard");
+  }, [allowed, config, router]);
 
-  return (
-    <ProjectsEmptyState
-      variant="no-results"
-      title="Tidak memiliki akses"
-      subtitle="Akun kamu login sebagai role yang berbeda, jadi halaman ini tidak tersedia untuk kamu."
-      actionLabel="Kembali ke Dashboard"
-      actionHref="/dashboard"
-    />
-  );
+  return allowed ? children : null;
 }

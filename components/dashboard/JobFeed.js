@@ -102,9 +102,9 @@ export default function JobFeed({ activeTab, query = "" }) {
   return (
     <div className="mt-20">
       <div className="job-feed-list">
-        {items.map((p) => (
+        {items.map((p, i) => (
           <ProjectCardMaha
-            key={p.id}
+            key={`${p.id}-${i}`}
             project={p}
             onClick={openDetail}
             saved={savedIds.has(p.id)}

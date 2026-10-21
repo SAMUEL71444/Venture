@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Icon from "@/components/Icon";
 import { useRole } from "@/context/RoleContext";
 import { ROLES } from "@/config/roles";
+import SessionLoading from "@/components/layout/SessionLoading";
+import useRequireAuth from "@/components/layout/useRequireAuth";
 
 export default function VerifyPage() {
   return (
@@ -17,14 +19,17 @@ export default function VerifyPage() {
 function VerifyForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { setRole } = useRole();
-  const type = searchParams.get("type") || "umkm";
+  const { setRole, role } = useRole();
+  const signedIn = useRequireAuth();
+  const type = role || searchParams.get("type") || "umkm";
   const isUmkm = type === "umkm";
 
   function finishAndEnter() {
     setRole(type);
     router.push(ROLES[type]?.home || "/dashboard");
   }
+
+  if (!signedIn) return <SessionLoading />;
 
   return (
     <div className="auth-wrap">

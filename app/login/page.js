@@ -1,12 +1,14 @@
 "use client";
 
 import "../auth.css";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRole } from "@/context/RoleContext";
-import { ROLES } from "@/config/roles";
+import { ROLES, canAccess } from "@/config/roles";
 import AuthShell from "@/components/auth/AuthShell";
+import useGuestOnly from "@/components/auth/useGuestOnly";
+import SessionLoading from "@/components/layout/SessionLoading";
 import PasswordInput from "@/components/auth/PasswordInput";
 import { FieldError, FormAlert, SubmitButton, useCountdown } from "@/components/auth/AuthParts";
 import { validateLogin, channelOf, normalizeIdentifier } from "@/lib/auth/validation";
@@ -32,6 +34,13 @@ const REASONS = {
   reset: { tone: "success", title: "Password berhasil diubah", text: "Masuk dengan password barumu. Semua sesi lama sudah dikeluarkan." },
 };
 
+// ?next= dari halaman yang dijaga (useRequireAuth). Hanya path internal yang
+// boleh diakses peran ini yang dipakai — mencegah open redirect.
+function safeNext(next, appRole) {
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return null;
+  return canAccess(appRole, next) ? next : null;
+}
+
 export default function LoginPage() {
   return (
     <Suspense fallback={null}>
@@ -44,6 +53,9 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setRole } = useRole();
+  const next = searchParams.get("next");
+  const homeFor = useCallback((appRole) => safeNext(next, appRole) || ROLES[appRole].home, [next]);
+  const checkingSession = useGuestOnly(homeFor);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
@@ -124,7 +136,7 @@ function LoginContent() {
       const { appRole, status } = res.data.user;
       setRole(appRole);
       // Mahasiswa yang belum terverifikasi diarahkan menyelesaikan verifikasi identitas.
-      router.push(status === "PENDING_VERIFICATION" && appRole !== "trust" ? `/verify?type=${appRole}` : ROLES[appRole].home);
+      router.push(status === "PENDING_VERIFICATION" && appRole !== "trust" ? `/verify?type=${appRole}` : homeFor(appRole));
       return;
     }
 
@@ -151,6 +163,8 @@ function LoginContent() {
     }
     return <FormAlert tone={formError.tone} title={formError.title}>{formError.text}</FormAlert>;
   }
+
+  if (checkingSession) return <SessionLoading />;
 
   return (
     <AuthShell aside={ASIDE} topLink={{ text: "Belum punya akun?", label: "Daftar", href: "/choose-type" }}>

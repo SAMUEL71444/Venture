@@ -23,6 +23,7 @@ export default function UserMenu({ user, profileMenu = [], showOnlineToggle = tr
         <div>
           <div className="t-h3" style={{ fontSize: 15 }}>{user.name}</div>
           <div className="t-small muted">{user.plan || "Freelancer Basic"}</div>
+          {user.email && <div className="t-caption muted" style={{ overflowWrap: "anywhere" }}>{user.email}</div>}
         </div>
       </div>
 
