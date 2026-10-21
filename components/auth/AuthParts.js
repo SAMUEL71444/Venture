@@ -57,9 +57,9 @@ export function useCountdown(until) {
   return left;
 }
 
-// Langkah pendaftaran: Buat akun → Verifikasi email → Verifikasi identitas
-// (halaman /verify yang sudah ada). `current` = indeks 0-based.
-const STEPS = ["Buat akun", "Verifikasi email", "Verifikasi identitas"];
+// Langkah pendaftaran: Verifikasi kontak (OTP email/WhatsApp) → Lengkapi data
+// → Verifikasi identitas (halaman /verify yang sudah ada). `current` = indeks 0-based.
+const STEPS = ["Verifikasi kontak", "Lengkapi data", "Verifikasi identitas"];
 export function SignupSteps({ current }) {
   return (
     <ol className="au-steps" aria-label={`Langkah ${current + 1} dari ${STEPS.length}`}>

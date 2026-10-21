@@ -67,3 +67,5 @@ export const IconRefresh = make(
     <path d="M8 16H3v5" />
   </>
 );
+// message-circle — untuk kanal WhatsApp.
+export const IconMessage = make(<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />);

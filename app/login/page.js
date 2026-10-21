@@ -1,21 +1,18 @@
 "use client";
 
 import "../auth.css";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useRole } from "@/context/RoleContext";
 import { ROLES } from "@/config/roles";
 import AuthShell from "@/components/auth/AuthShell";
 import PasswordInput from "@/components/auth/PasswordInput";
 import { FieldError, FormAlert, SubmitButton, useCountdown } from "@/components/auth/AuthParts";
-import { IconMail } from "@/components/auth/AuthIcons";
-import { validateLogin, validateEmail } from "@/lib/auth/validation";
-import { login, resendOtp, formatCountdown, demoAccounts, USE_MOCK } from "@/lib/auth/api";
+import { validateLogin, channelOf, normalizeIdentifier } from "@/lib/auth/validation";
+import { login, formatCountdown, demoAccounts, USE_MOCK, ROLE_FROM_BACKEND } from "@/lib/auth/api";
 
-const ROLE_OPTIONS = ["umkm", "mahasiswa", "trust"];
-const roleLabel = (key) => (key === "mahasiswa" ? "Mahasiswa" : ROLES[key].label);
-// "Ingat saya" hanya menyimpan email & peran — TIDAK PERNAH password.
+// "Ingat saya" hanya menyimpan email/nomor — TIDAK PERNAH password.
 const REMEMBER_KEY = "digitalin.rememberLogin";
 
 const ASIDE = {
@@ -28,29 +25,42 @@ const ASIDE = {
   ],
 };
 
+// Pesan dari ?reason= (diarahkan ke sini oleh RoleContext / halaman lupa password).
+const REASONS = {
+  expired: { tone: "info", title: "Sesi berakhir", text: "Silakan masuk lagi untuk melanjutkan." },
+  suspended: { tone: "error", title: "Akun ini sedang ditangguhkan", text: "Hubungi tim Digital.in untuk informasi lebih lanjut." },
+  reset: { tone: "success", title: "Password berhasil diubah", text: "Masuk dengan password barumu. Semua sesi lama sudah dikeluarkan." },
+};
+
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setRole } = useRole();
-  const [role, setSelectedRole] = useState("umkm");
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [errors, setErrors] = useState({});
-  const [formError, setFormError] = useState(null); // error dari backend
+  const [formError, setFormError] = useState(() => REASONS[searchParams.get("reason")] || null);
   const [loading, setLoading] = useState(false);
-  const [resending, setResending] = useState(false);
   const [lockUntil, setLockUntil] = useState(null);
   const lockLeft = useCountdown(lockUntil);
-  const emailRef = useRef(null);
+  const identifierRef = useRef(null);
   const passwordWrap = useRef(null);
 
   // Prefill dari "Ingat saya" (dibaca setelah mount — hindari hydration mismatch).
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(REMEMBER_KEY) || "null");
-      if (saved?.email) {
-        setEmail(saved.email);
-        if (ROLES[saved.role]) setSelectedRole(saved.role);
+      if (saved?.identifier) {
+        setIdentifier(saved.identifier);
         setRemember(true);
       }
     } catch { /* storage tidak tersedia */ }
@@ -66,164 +76,99 @@ export default function LoginPage() {
 
   const locked = lockLeft > 0;
 
-  function pickRole(key) {
-    setSelectedRole(key);
-    setFormError((f) => (f?.code === "ROLE_MISMATCH" ? null : f));
-    // Kalau isian masih akun demo role lain, ganti ke akun demo role ini.
-    const demoEmails = Object.values(demoAccounts).map((a) => a.email);
-    if (demoAccounts[key] && (!email || demoEmails.includes(email))) {
-      setEmail(demoAccounts[key].email);
-      if (password) setPassword(demoAccounts[key].password);
-    }
-  }
-
-  function fillDemo() {
-    const acc = demoAccounts[role];
-    if (!acc) return;
-    setEmail(acc.email);
-    setPassword(acc.password);
-    setErrors({});
-    setFormError((f) => (f?.code === "LOCKED" ? f : null));
-  }
-
-  // Error field hilang/diperbarui begitu isian diperbaiki.
-  function changeEmail(v) {
-    setEmail(v);
-    if (errors.email) setErrors((e) => ({ ...e, email: validateEmail(v) || undefined }));
+  function clearTransientError() {
     setFormError((f) => (f && f.code !== "LOCKED" ? null : f));
+  }
+
+  function changeIdentifier(v) {
+    setIdentifier(v);
+    if (errors.identifier) setErrors((e) => ({ ...e, identifier: validateLogin({ identifier: v, password: "x" }).identifier }));
+    clearTransientError();
   }
   function changePassword(v) {
     setPassword(v);
     if (errors.password) setErrors((e) => ({ ...e, password: v ? undefined : "Password wajib diisi" }));
-    setFormError((f) => (f && f.code !== "LOCKED" ? null : f));
+    clearTransientError();
   }
 
-  function focusField(name) {
-    if (name === "email") emailRef.current?.focus();
-    else passwordWrap.current?.querySelector("input")?.focus();
+  function fillDemo(account) {
+    setIdentifier(account.identifier);
+    setPassword(account.password);
+    setErrors({});
+    clearTransientError();
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (loading || locked) return;
-    const errs = validateLogin({ email, password });
+    const errs = validateLogin({ identifier, password });
     setErrors(errs);
     setFormError(null);
     if (Object.keys(errs).length) {
-      focusField(errs.email ? "email" : "password");
+      if (errs.identifier) identifierRef.current?.focus();
+      else passwordWrap.current?.querySelector("input")?.focus();
       return;
     }
 
+    const value = normalizeIdentifier(channelOf(identifier), identifier);
     setLoading(true);
-    const res = await login({ email, password, role });
+    const res = await login({ identifier: value, password });
     setLoading(false);
 
     if (res.ok) {
       try {
-        if (remember) localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email: res.data.user.email, role: res.data.user.role }));
+        if (remember) localStorage.setItem(REMEMBER_KEY, JSON.stringify({ identifier: value }));
         else localStorage.removeItem(REMEMBER_KEY);
       } catch { /* abaikan */ }
       setPassword("");
-      setRole(res.data.user.role);
-      router.push(ROLES[res.data.user.role].home);
+      const { appRole, status } = res.data.user;
+      setRole(appRole);
+      // Mahasiswa yang belum terverifikasi diarahkan menyelesaikan verifikasi identitas.
+      router.push(status === "PENDING_VERIFICATION" && appRole !== "trust" ? `/verify?type=${appRole}` : ROLES[appRole].home);
       return;
     }
 
     const err = res.error;
     if (err.code === "VALIDATION") {
-      setErrors(err.fields || {});
+      setErrors({ identifier: err.fields?.identifier, password: err.fields?.password });
       return;
     }
     if (err.code === "LOCKED") setLockUntil(Date.now() + err.retryAfter * 1000);
-    setFormError(err);
-  }
-
-  async function resendAndVerify() {
-    if (resending) return;
-    setResending(true);
-    const res = await resendOtp({ email: formError.email });
-    setResending(false);
-    if (!res.ok && res.error.code === "NETWORK") {
-      setFormError(res.error);
-      return;
-    }
-    // Cooldown/blokir tetap diarahkan — halaman verifikasi menampilkan statusnya.
-    router.push(`/verify-email?email=${encodeURIComponent(formError.email)}`);
+    setFormError({ code: err.code, tone: err.code === "LOCKED" ? "warning" : "error", title: err.message });
   }
 
   function renderFormError() {
     if (!formError) return null;
-    switch (formError.code) {
-      case "LOCKED":
-        return (
-          <FormAlert tone="warning" title="Terlalu banyak percobaan gagal">
-            Demi keamanan, login dikunci sementara. Coba lagi dalam <b>{formatCountdown(lockLeft)}</b>.
-          </FormAlert>
-        );
-      case "UNVERIFIED":
-        return (
-          <FormAlert
-            tone="warning"
-            title={formError.message}
-            action={
-              <button type="button" className="btn btn-secondary btn-sm" onClick={resendAndVerify} disabled={resending}>
-                <IconMail size={16} /> {resending ? "Mengirim kode…" : "Kirim ulang kode & verifikasi"}
-              </button>
-            }
-          >
-            Verifikasi email dulu sebelum masuk. Kami akan mengirim kode 6 digit ke emailmu.
-          </FormAlert>
-        );
-      case "ROLE_MISMATCH":
-        return (
-          <FormAlert
-            title={formError.message}
-            action={
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => pickRole(formError.role)}>
-                Pilih peran {roleLabel(formError.role)}
-              </button>
-            }
-          >
-            Akun ini terdaftar sebagai <b>{roleLabel(formError.role)}</b>. Pilih peran yang sesuai lalu masuk lagi.
-          </FormAlert>
-        );
-      default:
-        return <FormAlert title={formError.message} />;
+    if (formError.code === "LOCKED") {
+      return (
+        <FormAlert tone="warning" title="Terlalu banyak percobaan gagal">
+          Demi keamanan, login dikunci sementara. Coba lagi dalam <b>{formatCountdown(lockLeft)}</b>.
+        </FormAlert>
+      );
     }
+    if (formError.code === "ROLE_UNSUPPORTED") {
+      return <FormAlert title={formError.title}>Akun mentor belum memiliki tampilan di aplikasi web.</FormAlert>;
+    }
+    return <FormAlert tone={formError.tone} title={formError.title}>{formError.text}</FormAlert>;
   }
 
   return (
     <AuthShell aside={ASIDE} topLink={{ text: "Belum punya akun?", label: "Daftar", href: "/choose-type" }}>
       <h1 className="au-title">Masuk ke akunmu</h1>
-      <p className="au-sub">Senang melihatmu lagi. Masukkan email dan password untuk melanjutkan.</p>
+      <p className="au-sub">Senang melihatmu lagi. Masuk dengan email atau nomor WhatsApp yang kamu daftarkan.</p>
 
       <form className="au-form" onSubmit={handleSubmit} noValidate>
         {renderFormError()}
 
         <div className="field">
-          <span className="au-label" id="login-role-label">Masuk sebagai</span>
-          <div className="au-roles" role="radiogroup" aria-labelledby="login-role-label">
-            {ROLE_OPTIONS.map((key) => (
-              <button
-                key={key} type="button" role="radio" aria-checked={role === key}
-                className={`au-role ${role === key ? "selected" : ""}`}
-                onClick={() => pickRole(key)}
-              >
-                {roleLabel(key)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="field">
-          <label htmlFor="login-email">Email</label>
+          <label htmlFor="login-identifier">Email atau nomor WhatsApp</label>
           <input
-            ref={emailRef} id="login-email" name="email" type="email" className="input au-input"
-            placeholder="nama@email.com" autoComplete="email" inputMode="email"
-            value={email} onChange={(e) => changeEmail(e.target.value)}
-            aria-invalid={!!errors.email || undefined} aria-describedby={errors.email ? "login-email-err" : undefined}
+            ref={identifierRef} id="login-identifier" name="identifier" type="text" className="input au-input"
+            placeholder="nama@email.com atau 0812…" autoComplete="username" autoCapitalize="none" spellCheck={false}
+            value={identifier} onChange={(e) => changeIdentifier(e.target.value)}
+            aria-invalid={!!errors.identifier || undefined} aria-describedby={errors.identifier ? "login-identifier-err" : undefined}
           />
-          <FieldError id="login-email-err" message={errors.email} />
+          <FieldError id="login-identifier-err" message={errors.identifier} />
         </div>
 
         <div className="field" ref={passwordWrap}>
@@ -248,9 +193,17 @@ export default function LoginPage() {
           {locked ? `Coba lagi dalam ${formatCountdown(lockLeft)}` : "Masuk"}
         </SubmitButton>
 
-        {USE_MOCK && demoAccounts[role] && (
+        {USE_MOCK && demoAccounts.length > 0 && (
           <p className="au-demo-hint">
-            Mode demo: <button type="button" className="link-btn" onClick={fillDemo}>isi akun demo {roleLabel(role)}</button>
+            Mode demo — isi akun:{" "}
+            {demoAccounts.map((a, i) => (
+              <span key={a.role}>
+                {i > 0 && " · "}
+                <button type="button" className="link-btn" onClick={() => fillDemo(a)}>
+                  {ROLES[ROLE_FROM_BACKEND[a.role]]?.label || a.role}
+                </button>
+              </span>
+            ))}
           </p>
         )}
       </form>

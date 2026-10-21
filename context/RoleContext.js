@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { ROLES } from "@/config/roles";
 import { CURRENT_USERS } from "@/lib/users.mock";
+import { SESSION_ENDED_EVENT } from "@/lib/auth/session";
 
 const STORAGE_KEY = "digitalin.role";
 
@@ -36,6 +37,19 @@ export function RoleProvider({ children }) {
     // langsung bisa dibuka tanpa lewat /login dulu — kebutuhan prototipe,
     // bukan perilaku auth beneran.
     setRoleState(readStoredRole() || "mahasiswa");
+  }, []);
+
+  // Sesi backend berakhir (refresh token ditolak / akun ditangguhkan, lihat
+  // lib/api.js) → keluar dari peran dan arahkan ke halaman Masuk.
+  useEffect(() => {
+    function onSessionEnded(e) {
+      const reason = e.detail?.reason;
+      if (reason !== "expired" && reason !== "suspended") return;
+      setRole(null);
+      window.location.assign(`/login?reason=${reason}`);
+    }
+    window.addEventListener(SESSION_ENDED_EVENT, onSessionEnded);
+    return () => window.removeEventListener(SESSION_ENDED_EVENT, onSessionEnded);
   }, []);
 
   function setRole(next) {

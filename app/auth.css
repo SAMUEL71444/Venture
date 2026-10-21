@@ -110,6 +110,16 @@
 @media (hover: hover) { .au-role:hover { color: var(--text); } }
 .au-role.selected { background: var(--surface); color: var(--primary-dark); border-color: var(--border); box-shadow: var(--shadow-sm); }
 .au-role:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+/* pilih kanal OTP (Email / WhatsApp) */
+.au-roles.au-channels { grid-template-columns: repeat(2, 1fr); }
+.au-role { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+
+/* --- kontak yang sudah terverifikasi (form daftar) --- */
+.au-verified { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 16px; padding: 10px 14px; border-radius: 10px; background: var(--primary-tint); border: 1px solid var(--primary-light); font-size: 15px; line-height: 1.45; }
+.au-verified svg { flex-shrink: 0; color: var(--primary); }
+.au-verified b { overflow-wrap: anywhere; }
+.au-verified .link-btn { margin-left: auto; }
+select.au-input { appearance: auto; }
 
 /* --- checkbox --- */
 .au-check { display: flex; align-items: flex-start; gap: 10px; min-height: 44px; padding: 10px 0; margin: 0 0 12px; font-size: 15px; line-height: 1.5; color: var(--text); cursor: pointer; }
@@ -224,3 +234,6 @@
   .au-otp.invalid, .au-success-icon { animation: none; }
   .au-strength-bar span, .au-pass-toggle, .au-role { transition: none; }
 }
+
+/* label "(opsional)" di form daftar */
+.au-optional { font-weight: 400; color: var(--text-muted); }

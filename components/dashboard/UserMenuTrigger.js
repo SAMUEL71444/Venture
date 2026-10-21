@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import UserMenu from "./UserMenu";
 import { initials } from "@/lib/mock-data";
 import { useRole } from "@/context/RoleContext";
+import { logout } from "@/lib/auth/api";
 
 const OPEN_DELAY = 120;
 const CLOSE_DELAY = 150;
@@ -75,6 +76,8 @@ export default function UserMenuTrigger({ user, sidebarOpen }) {
   }, [menuOpen]);
 
   function handleLogout() {
+    // Cabut refresh token di backend (tanpa menunggu) lalu hapus sesi lokal.
+    logout();
     setRole(null);
     closeMenu();
     router.push("/");
