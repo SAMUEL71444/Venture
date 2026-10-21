@@ -10,12 +10,14 @@ import useGuestOnly from "@/components/auth/useGuestOnly";
 import SessionLoading from "@/components/layout/SessionLoading";
 import AuthShell, { usePolicy } from "@/components/auth/AuthShell";
 import ContactField from "@/components/auth/ContactField";
+import UniversityCombobox from "@/components/auth/UniversityCombobox";
 import PasswordInput from "@/components/auth/PasswordInput";
 import PasswordStrength from "@/components/auth/PasswordStrength";
 import { FieldError, FormAlert, SubmitButton, SignupSteps, useCountdown } from "@/components/auth/AuthParts";
 import { IconCircleCheck, IconLoader } from "@/components/auth/AuthIcons";
 import {
   validateRegister, validateIdentifier, normalizeIdentifier, displayIdentifier, formatCountdown,
+  UNIVERSITY_CUSTOM, UNIVERSITY_CUSTOM_MAX,
 } from "@/lib/auth/validation";
 import { sendOtp, register, getUniversities } from "@/lib/auth/api";
 import { savePending, readProof, clearSignup } from "@/lib/auth/signup-flow";
@@ -193,13 +195,13 @@ function ContactStep({ type, t, expired, initialChannel, initialIdentifier }) {
 }
 
 // --- Langkah 2: data akun per peran ---------------------------------------------
-const FIELD_ORDER = ["name", "university", "campusEmail", "city", "password", "confirm"];
+const FIELD_ORDER = ["name", "university", "universityCustom", "campusEmail", "city", "password", "confirm"];
 
 function DetailsForm({ type, t, proof }) {
   const router = useRouter();
   const policy = usePolicy();
   const { setRole } = useRole();
-  const [values, setValues] = useState({ name: "", city: "", university: "", campusEmail: "", password: "", confirm: "" });
+  const [values, setValues] = useState({ name: "", city: "", university: "", universityCustom: "", campusEmail: "", password: "", confirm: "" });
   const [agree, setAgree] = useState(false);
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState(null);
@@ -365,17 +367,32 @@ function DetailsForm({ type, t, proof }) {
                   Hubungi tim Digital.in agar kampusmu ditambahkan.
                 </FormAlert>
               ) : (
-                <select
-                  id="reg-university" {...field("university")} className="input au-input"
-                  value={values.university} onChange={(e) => change("university", e.target.value)} onBlur={() => blur("university")}
-                >
-                  <option value="">Pilih universitas</option>
-                  {universities.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-                </select>
+                <UniversityCombobox
+                  id="reg-university" name="reg-university" universities={universities}
+                  value={values.university} onChange={(v) => change("university", v)} onBlur={() => blur("university")}
+                  invalid={!!errors.university} describedBy={errors.university ? "reg-university-err" : undefined}
+                />
               )}
               <FieldError id="reg-university-err" message={errors.university} />
             </div>
 
+            {values.university === UNIVERSITY_CUSTOM && (
+              <div className="field">
+                <label htmlFor="reg-universityCustom">Nama universitas</label>
+                <input
+                  id="reg-universityCustom" {...field("universityCustom")} className="input au-input"
+                  placeholder="Tulis nama lengkap universitasmu" autoComplete="off" maxLength={UNIVERSITY_CUSTOM_MAX}
+                  value={values.universityCustom} onChange={(e) => change("universityCustom", e.target.value)} onBlur={() => blur("universityCustom")}
+                />
+                {errors.universityCustom
+                  ? <FieldError id="reg-universityCustom-err" message={errors.universityCustom} />
+                  : <p className="au-hint au-hint-left">Status mahasiswa akan diverifikasi lewat unggah KTM setelah akun dibuat.</p>}
+              </div>
+            )}
+
+            {values.university === UNIVERSITY_CUSTOM ? (
+              <p className="au-hint au-hint-left">Email kampus tidak tersedia untuk universitas di luar daftar — verifikasi dilakukan lewat unggah KTM.</p>
+            ) : (
             <div className="field">
               <label htmlFor="reg-campusEmail">Email kampus <span className="au-optional">(opsional)</span></label>
               <input
@@ -387,6 +404,7 @@ function DetailsForm({ type, t, proof }) {
                 ? <FieldError id="reg-campusEmail-err" message={errors.campusEmail} />
                 : <p className="au-hint au-hint-left">Isi untuk verifikasi status mahasiswa lewat tautan email. Bisa juga lewat unggah KTM nanti.</p>}
             </div>
+            )}
           </>
         )}
 

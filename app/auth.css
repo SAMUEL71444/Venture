@@ -237,3 +237,16 @@ select.au-input { appearance: auto; }
 
 /* label "(opsional)" di form daftar */
 .au-optional { font-weight: 400; color: var(--text-muted); }
+
+/* --- combobox universitas (form daftar mahasiswa) --- */
+.au-combo { position: relative; }
+.au-combo-list {
+  position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; right: 0; max-height: 300px; overflow-y: auto;
+  margin: 0; padding: 4px; list-style: none; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-md);
+}
+.au-combo-option { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 44px; padding: 8px 12px; border-radius: 8px; font-size: 15px; line-height: 1.35; color: var(--text); cursor: pointer; }
+.au-combo-option.active { background: var(--bg-hover); }
+.au-combo-option[aria-selected="true"] { font-weight: 600; color: var(--primary-dark); }
+.au-combo-meta { font-size: 13px; font-weight: 400; color: var(--text-muted); }
+.au-combo-custom { margin-top: 4px; border-top: 1px solid var(--border); border-radius: 0 0 8px 8px; font-weight: 600; color: var(--primary-dark); }
+.au-combo-empty { padding: 10px 12px; font-size: 14px; color: var(--text-muted); }
