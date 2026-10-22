@@ -10,6 +10,7 @@ use App\Models\Milestone;
 use App\Models\Project;
 use App\Models\User;
 use App\Modules\admin\Http\Resources\AdminUserResource;
+use App\Shared\Database\LikeSearch;
 use App\Shared\Http\ApiResponse;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -34,12 +35,12 @@ final class AdminUserController extends Controller
         $query = User::query()->with(self::RELATIONS);
 
         if (! empty($input['q'])) {
-            // LOWER(...) LIKE ... ESCAPE: pencarian tanpa beda huruf yang sama di SQLite & PostgreSQL.
-            $term = '%'.addcslashes(mb_strtolower(trim($input['q'])), '%_\\').'%';
+            // Pencarian tanpa beda huruf yang sama di SQLite & PostgreSQL (lihat LikeSearch).
+            $term = LikeSearch::containsPattern(trim($input['q']));
             $query->where(fn (Builder $q) => $q
-                ->whereRaw("LOWER(name) LIKE ? ESCAPE '\\'", [$term])
-                ->orWhereRaw("LOWER(email) LIKE ? ESCAPE '\\'", [$term])
-                ->orWhereRaw("phone LIKE ? ESCAPE '\\'", [$term]));
+                ->whereRaw(LikeSearch::sql('name'), [$term])
+                ->orWhereRaw(LikeSearch::sql('email'), [$term])
+                ->orWhereRaw(LikeSearch::sql('phone'), [$term]));
         }
         foreach (['role', 'status'] as $filter) {
             if (! empty($input[$filter])) {

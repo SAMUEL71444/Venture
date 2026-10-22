@@ -15,6 +15,7 @@ use App\Modules\payment\Services\PaymentService;
 use App\Modules\project\Services\PremiumListingService;
 use App\Modules\project\State\ProjectStateMachine;
 use App\Modules\scheduler\Services\SchedulerPlanner;
+use App\Shared\Database\LikeSearch;
 use App\Shared\Database\TransactionRunner;
 use App\Shared\Exceptions\BusinessRuleViolation;
 use App\Shared\Exceptions\InvalidStateTransition;
@@ -67,8 +68,8 @@ final class ProjectController extends Controller
             $query->where('city', $input['city']);
         }
         if (! empty($input['q'])) {
-            // ESCAPE eksplisit: PostgreSQL memakai backslash sebagai escape bawaan, SQLite tidak punya escape bawaan.
-            $query->whereRaw("LOWER(title) LIKE ? ESCAPE '\\'", ['%'.addcslashes(mb_strtolower($input['q']), '%_\\').'%']);
+            // ESCAPE eksplisit (lihat LikeSearch): PostgreSQL memakai backslash sebagai escape bawaan, SQLite tidak punya.
+            $query->whereRaw(LikeSearch::sql('title'), [LikeSearch::containsPattern($input['q'])]);
         }
 
         // Premium listing yang sedang aktif tampil lebih dulu.

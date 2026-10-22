@@ -73,6 +73,12 @@ jobs:
       - name: Composer install
         run: composer install --no-interaction --no-progress --prefer-dist
 
+      # .env tidak di-commit (berisi rahasia). Tanpa file ini phpdotenv mencoba membacanya dan
+      # PHPUnit melaporkan warning file_get_contents(.env) di setiap test. File kosong cukup:
+      # semua nilai datang dari env job ini dan phpunit.xml.
+      - name: .env kosong
+        run: touch .env
+
       - name: APP_KEY sementara (hanya untuk job ini)
         run: echo "APP_KEY=base64:$(openssl rand -base64 32)" >> "$GITHUB_ENV"
 
