@@ -23,7 +23,7 @@ final class VerificationController extends Controller
     /** Total pengajuan KTM (unggah pertama + unggah ulang setelah ditolak). */
     public const MAX_KTM_ATTEMPTS = 3;
 
-    /** Disk privat file KTM (config filesystems.sensitive_disks.ktm; produksi: r2). */
+    /** Disk privat file KTM (config filesystems.sensitive_disks.ktm; produksi: s3 = Supabase Storage). */
     public static function ktmDisk(): string
     {
         return (string) config('filesystems.sensitive_disks.ktm', 'private');

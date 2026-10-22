@@ -1,6 +1,6 @@
 # Deploy Digital.in
 
-Arsitektur: **Neon** (PostgreSQL) → **Cloudflare R2** (file KTM & hasil kerja) → **Render** (backend Laravel, Docker) → **Vercel** (frontend Next.js).
+Arsitektur: **Neon** (PostgreSQL) → **Supabase Storage** (file KTM & hasil kerja, S3-compatible) → **Render** (backend Laravel, Docker) → **Vercel** (frontend Next.js).
 Kerjakan berurutan; tiap langkah butuh nilai dari langkah sebelumnya. Dokumen ini **tidak berisi nilai rahasia** — isi sendiri di dashboard masing-masing layanan.
 
 ---
@@ -29,15 +29,29 @@ Setiap branch Neon punya endpoint sendiri (`ep-…` di host). Endpoint inilah ca
 
 Migrasi dijalankan otomatis oleh container saat start (`migrate --force`); tidak perlu menjalankannya manual.
 
-## 2. Cloudflare R2 (file sensitif)
+## 2. Supabase Storage (file sensitif)
 
-1. **R2 → Create bucket**, misalnya `digitalin-files`. **Jangan** aktifkan *Public access* / r2.dev / custom domain. File KTM & hasil kerja hanya dialirkan lewat API yang sudah dicek hak aksesnya.
-2. **R2 → Manage API Tokens → Create API token**: izin **Object Read & Write**, dibatasi ke bucket tadi saja.
-3. Catat: *Access Key ID*, *Secret Access Key*, dan endpoint S3 `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`.
-4. CORS bucket tidak perlu diatur (browser tidak mengakses R2 langsung).
+Supabase **hanya dipakai untuk Storage**. Database tetap di Neon; database Postgres bawaan project Supabase tidak dipakai sama sekali.
 
-Disk Laravel `r2` sudah tersedia di `backend/config/filesystems.php`. Aktifkan lewat `KTM_FILES_DISK=r2` dan `SUBMISSION_FILES_DISK=r2`.
-Tanpa R2, file tersimpan di disk container Render yang **terhapus setiap deploy/restart**.
+1. **New project** di [supabase.com](https://supabase.com), region **Southeast Asia (Singapore)**. Password database yang diminta saat membuat project tidak dipakai aplikasi, tapi tetap simpan di tempat aman.
+2. **Storage → New bucket**:
+   - nama `digitalin-private`;
+   - **Public bucket: OFF**. File KTM & hasil kerja hanya dialirkan lewat API backend yang sudah dicek hak aksesnya, tidak pernah lewat URL publik;
+   - opsional: *File size limit* 20 MB (batas unggahan hasil kerja di backend).
+3. **Project Settings → Storage → S3 Connection**:
+   - pastikan *S3 connection* aktif;
+   - salin **Endpoint** dan **Region** persis seperti yang tertera;
+   - klik **New access key**, lalu catat *Access key ID* dan *Secret access key*. Secret hanya ditampilkan sekali.
+   - Access key S3 Supabase berlaku untuk **semua bucket** di project itu dan melewati RLS, jadi jangan simpan bucket publik lain di project yang sama.
+4. CORS tidak perlu diatur (browser tidak mengakses Supabase Storage langsung).
+
+Backend memakai disk Laravel `s3` (`backend/config/filesystems.php`: privat, path-style, tanpa URL publik). Aktifkan lewat `KTM_FILES_DISK=s3` dan `SUBMISSION_FILES_DISK=s3`.
+Tanpa ini, file tersimpan di disk container Render yang **terhapus setiap deploy/restart**.
+
+**Project gratis dijeda otomatis.** Project Supabase gratis di-*pause* setelah sekitar **1 minggu tanpa aktivitas**. Selama dijeda, unggah dan unduh KTM/hasil kerja gagal: backend mengembalikan error, tapi data di Neon tetap aman.
+- Cara memulihkan: buka dashboard Supabase → pilih project → **Restore project**. Prosesnya beberapa menit, dan file di bucket tidak hilang.
+- Project yang terlalu lama dijeda (saat ini 90 hari menurut kebijakan Supabase) tidak bisa dipulihkan dari dashboard. Cek dashboard secara berkala.
+- Untuk pemakaian sungguhan, pertimbangkan paket berbayar agar tidak pernah dijeda.
 
 ## 3. Render (backend)
 
@@ -87,13 +101,14 @@ Saat start, `docker/start.sh` menjalankan berurutan:
 | `BROADCAST_CONNECTION` | `null` (**jangan** `log`: isi pesan chat akan tertulis di log) |
 | `TRUSTED_PROXIES` | `*` (Render berada di belakang load balancer; dipakai untuk IP klien di rate limit/audit dan deteksi https) |
 | `CORS_ALLOWED_ORIGINS` | domain Vercel, persis tanpa `/` di akhir, mis. `https://digitalin.vercel.app`; pisahkan dengan koma bila lebih dari satu. Isi setelah langkah 4. |
-| `KTM_FILES_DISK` | `r2` |
-| `SUBMISSION_FILES_DISK` | `r2` |
-| `R2_ACCESS_KEY_ID` 🔒 | dari langkah 2 |
-| `R2_SECRET_ACCESS_KEY` 🔒 | dari langkah 2 |
-| `R2_BUCKET` | nama bucket |
-| `R2_ENDPOINT` | `https://<ACCOUNT_ID>.r2.cloudflarestorage.com` |
-| `R2_REGION` | `auto` |
+| `KTM_FILES_DISK` | `s3` |
+| `SUBMISSION_FILES_DISK` | `s3` |
+| `AWS_ACCESS_KEY_ID` 🔒 | *Access key ID* Supabase dari langkah 2 |
+| `AWS_SECRET_ACCESS_KEY` 🔒 | *Secret access key* Supabase dari langkah 2 |
+| `AWS_DEFAULT_REGION` | *Region* dari halaman S3 Connection, salin persis |
+| `AWS_BUCKET` | `digitalin-private` |
+| `AWS_ENDPOINT` | *Endpoint* dari halaman S3 Connection, salin persis (bentuknya `https://<project-ref>.supabase.co/storage/v1/s3`) |
+| `AWS_USE_PATH_STYLE_ENDPOINT` | `true` (wajib untuk Supabase) |
 | `MAIL_MAILER` | `smtp` (**jangan** `log`; di server OTP email akan ditolak) |
 | `MAIL_SCHEME` | `smtps` untuk port 465, kosongkan untuk 587 |
 | `MAIL_HOST`, `MAIL_PORT` | dari penyedia SMTP |
@@ -152,11 +167,11 @@ Untuk mengaktifkannya, buat **Render Cron Job** dari repo & Dockerfile yang sama
 
 **Cara A — Render Shell** (instance berbayar): Render → service → **Shell**. Perintah berjalan dengan env server.
 
-**Cara B — dari komputer lokal** (instance Free). Jalankan artisan lokal yang terhubung ke Neon & R2:
+**Cara B — dari komputer lokal** (instance Free). Jalankan artisan lokal yang terhubung ke Neon & Supabase Storage:
 1. Aktifkan `extension=pdo_pgsql` dan `extension=pgsql` di `php.ini` lokal.
 2. Buat file env **di luar folder repo**, mis. `C:\Users\<kamu>\digitalin-server.env`, berisi nilai yang **sama persis** dengan Render, minimal:
    - `APP_ENV`, `APP_KEY`, `DB_CONNECTION`, `DB_URL`;
-   - `KTM_FILES_DISK`, `SUBMISSION_FILES_DISK`, `R2_*`;
+   - `KTM_FILES_DISK`, `SUBMISSION_FILES_DISK`, `AWS_*` (Supabase Storage);
    - `PAYMENT_GATEWAY_DRIVER`, `PAYMENT_WEBHOOK_SECRET`, `DISBURSEMENT_DRIVER`, `DISBURSEMENT_WEBHOOK_SECRET`.
 3. Di Git Bash, dari folder `backend`, jalankan dalam subshell agar variabel tidak tertinggal:
    ```bash
@@ -209,7 +224,7 @@ php artisan demo:seed     # ±1 menit
 - **Password semua akun demo dicetak SEKALI** di akhir output dan tidak disimpan di mana pun. Catat saat itu juga.
 - Semua akun demo memakai email `@demo.digitalin.test`.
 - Isi data demo: 1 admin, 2 mentor, 5 UMKM, 10 mahasiswa (6 terverifikasi, 3 menunggu verifikasi KTM, 1 ditolak), 8 proyek dalam berbagai status (berjalan, sengketa, selesai, dibatalkan), dana escrow, dan peringatan kualitas.
-- File KTM & hasil kerja demo ikut tersimpan ke R2.
+- File KTM & hasil kerja demo ikut tersimpan ke Supabase Storage.
 
 Menghapus **seluruh** data demo beserta filenya (data non-demo tidak disentuh):
 ```bash
@@ -226,7 +241,8 @@ php artisan demo:clear --force
 - [ ] Kredensial mail (dan WhatsApp) diisi; `MAIL_MAILER` bukan `log`. Uji OTP daftar & lupa password sampai ke inbox.
 - [ ] `zend.exception_ignore_args=On` dan `display_errors=Off`. Sudah diatur di image; cek lewat Shell: `php -i | grep -E "exception_ignore_args|display_errors"`.
 - [ ] **`php artisan demo:clear --force` sudah dijalankan** sebelum pengguna sungguhan mendaftar (atau data demo memang tidak pernah dibuat).
-- [ ] Bucket R2 **private** (tanpa public access / r2.dev), dan token R2 dibatasi ke bucket itu.
+- [ ] Bucket Supabase `digitalin-private` **privat** (Public bucket OFF). Access key S3 hanya ada di env Render/laptop dan tidak ada bucket publik lain di project yang sama (key S3 Supabase berlaku untuk semua bucket).
+- [ ] Project Supabase tidak sedang dijeda (cek sebelum demo/presentasi).
 - [ ] `PAYMENT_WEBHOOK_SECRET` & `DISBURSEMENT_WEBHOOK_SECRET` acak, panjang, dan berbeda satu sama lain.
 - [ ] `TRUSTED_PROXIES=*` di Render. Tanpa ini, rate limit OTP menganggap semua pengguna berasal dari satu IP.
 - [ ] `BROADCAST_CONNECTION` bukan `log`; `LOG_LEVEL` bukan `debug`.

@@ -35,7 +35,7 @@ use Throwable;
  */
 final class MilestoneReviewService
 {
-    /** Disk privat file hasil kerja (config filesystems.sensitive_disks.submissions; produksi: r2). */
+    /** Disk privat file hasil kerja (config filesystems.sensitive_disks.submissions; produksi: s3 = Supabase Storage). */
     public static function fileDisk(): string
     {
         return (string) config('filesystems.sensitive_disks.submissions', 'local');
