@@ -14,6 +14,16 @@ class UmkmProfile extends Model
         'user_id', 'business_name', 'business_type', 'address', 'city', 'latitude', 'longitude', 'instagram_url', 'rating_avg',
     ];
 
+    protected function casts(): array
+    {
+        // Kolom decimal: pgsql mengembalikan string ("-6.2000000"), SQLite float. Samakan jadi angka.
+        return [
+            'latitude' => 'float',
+            'longitude' => 'float',
+            'rating_avg' => 'float',
+        ];
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

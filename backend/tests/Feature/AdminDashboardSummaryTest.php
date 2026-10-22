@@ -4,6 +4,7 @@ use App\Support\Demo\DemoAccounts;
 use Database\Seeders\PlatformSettingsSeeder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -28,7 +29,7 @@ it('summarises verifications, held funds and disputes from real data', function 
         ->and($data['active_disputes'])->toBe(2)
         ->and($data['held_funds']['contracts'])->toBe(4)
         ->and($data['held_funds']['amount'])->toBe(
-            DB::table('escrows')->whereIn('status', ['HELD', 'PARTIALLY_RELEASED'])->sum('held_amount'),
+            (int) DB::table('escrows')->whereIn('status', ['HELD', 'PARTIALLY_RELEASED'])->sum('held_amount'),
         )
         ->and(collect($data['recent_verifications'])->pluck('name')->sort()->values()->all())->toBe(['Bagas Wirawan', 'Kirana Ayu', 'Rangga Saputra'])
         ->and($data['recent_disputes'])->toHaveCount(3)

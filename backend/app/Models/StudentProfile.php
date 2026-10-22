@@ -38,6 +38,8 @@ class StudentProfile extends Model
             'is_available' => 'boolean',
             'completed_contracts_count' => 'integer',
             'active_contracts_count' => 'integer',
+            // Kolom decimal: pgsql mengembalikan string ("4.50"), SQLite float. Samakan jadi angka.
+            'rating_avg' => 'float',
         ];
     }
 

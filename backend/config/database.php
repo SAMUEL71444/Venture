@@ -94,7 +94,14 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => 'prefer',
+            // DB_SSLMODE bila diisi; jika tidak: "prefer" untuk host lokal (Docker/CI tanpa SSL),
+            // "require" untuk host lain (mis. Neon). Host dibaca dari DB_URL bila ada, lalu DB_HOST.
+            // Catatan: ?sslmode=... di dalam DB_URL selalu menang atas nilai ini.
+            'sslmode' => env('DB_SSLMODE', in_array(
+                parse_url((string) env('DB_URL'), PHP_URL_HOST) ?: env('DB_HOST', '127.0.0.1'),
+                ['127.0.0.1', 'localhost', '::1'],
+                true,
+            ) ? 'prefer' : 'require'),
         ],
 
         'sqlsrv' => [

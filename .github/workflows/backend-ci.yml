@@ -1,0 +1,99 @@
+# CI backend: test Pest ke PostgreSQL 17 (sama dengan Neon) + build image Docker.
+# Tanpa secrets: kredensial database di bawah hanya untuk container sekali pakai di CI.
+name: Backend CI
+
+on:
+  push:
+    branches: [integrasi-auth]
+  pull_request:
+    branches: [integrasi-auth]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-pgsql:
+    name: Pest (PostgreSQL 17)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: digitalin_ci
+          POSTGRES_USER: digitalin_ci
+          POSTGRES_PASSWORD: ci-only-not-a-secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U digitalin_ci -d digitalin_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    # Menimpa <env> di phpunit.xml (tanpa force), jadi test memakai pgsql, bukan SQLite.
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: digitalin_ci
+      DB_USERNAME: digitalin_ci
+      DB_PASSWORD: ci-only-not-a-secret
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP (versi sama dengan FROM di backend/Dockerfile)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_pgsql, pgsql, bcmath, intl, zip, mbstring, dom, xml, fileinfo, curl, openssl, tokenizer, ctype
+          coverage: none
+          tools: composer:v2
+
+      - name: Lokasi cache Composer
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-php8.2-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php8.2-
+
+      - name: Composer install
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: APP_KEY sementara (hanya untuk job ini)
+        run: echo "APP_KEY=base64:$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+
+      - name: Test
+        run: php artisan test
+
+  docker-build:
+    name: Docker build (tanpa push)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend/Dockerfile
+        run: docker build --tag digitalin-backend:ci backend
+
+      - name: Cek ekstensi & pengaturan PHP di image
+        run: |
+          mods="$(docker run --rm digitalin-backend:ci php -m)"
+          for ext in pdo_pgsql pgsql bcmath intl zip "Zend OPcache"; do
+            printf '%s\n' "$mods" | grep -qx "$ext" || { echo "Ekstensi hilang: $ext"; exit 1; }
+          done
+          docker run --rm digitalin-backend:ci php -r 'exit(ini_get("zend.exception_ignore_args") === "1" && in_array(ini_get("display_errors"), ["", "0", "Off"], true) ? 0 : 1);'

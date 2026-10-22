@@ -20,6 +20,8 @@ class MentorProfile extends Model
         return [
             'max_active_reviews' => 'integer',
             'is_available' => 'boolean',
+            // Kolom decimal: pgsql mengembalikan string ("4.50"), SQLite float. Samakan jadi angka.
+            'rating_avg' => 'float',
         ];
     }
 

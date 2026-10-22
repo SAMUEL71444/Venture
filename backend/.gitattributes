@@ -1,5 +1,11 @@
 * text=auto eol=lf
 
+# Dibaca/dieksekusi di container Linux: selalu LF tanpa deteksi otomatis (CRLF merusak shebang start.sh).
+Dockerfile text eol=lf
+.dockerignore text eol=lf
+docker/** text eol=lf
+*.sh text eol=lf
+
 *.blade.php diff=html
 *.css diff=css
 *.html diff=html

@@ -20,10 +20,12 @@ Selain soal gateway, `staging` dan `production` berperilaku sama untuk keamanan:
 
 ## 1. Neon (PostgreSQL)
 
-1. Buat project baru, region **AWS Asia Pacific (Singapore)** (paling dekat dengan Render Singapore).
-2. Buka **Connection Details**, matikan *Connection pooling* (pakai koneksi **langsung**, bukan host `-pooler`; migrasi lebih aman lewat koneksi langsung).
+1. Buat project baru, region **AWS Asia Pacific (Singapore)** (paling dekat dengan Render Singapore), PostgreSQL 17. Branch default project ini bernama **`production`**; branch inilah yang dipakai Render.
+2. Buka **Connection Details** untuk branch `production`, matikan *Connection pooling* (pakai koneksi **langsung**, bukan host `-pooler`; migrasi lebih aman lewat koneksi langsung).
 3. Salin connection string dan pastikan diakhiri `?sslmode=require`. Ini menjadi `DB_URL` di Render.
-4. (Disarankan) Buat **branch** terpisah, misalnya `test`, untuk menjalankan test suite terhadap PostgreSQL. Jangan pernah menjalankan test ke branch utama.
+4. Branch `test` boleh dipakai untuk uji coba manual. Test suite lengkap **tidak** dijalankan ke Neon (terlalu lambat lewat jaringan); test PostgreSQL berjalan otomatis di GitHub Actions (`.github/workflows/backend-ci.yml`, service `postgres:17`). Jangan pernah menjalankan test ke branch `production`.
+
+Setiap branch Neon punya endpoint sendiri (`ep-…` di host). Endpoint inilah cara paling mudah membedakan `production` dan `test`.
 
 Migrasi dijalankan otomatis oleh container saat start (`migrate --force`); tidak perlu menjalankannya manual.
 
@@ -77,7 +79,8 @@ Saat start, `docker/start.sh` menjalankan berurutan:
 | `LOG_CHANNEL` | `stderr` (log muncul di tab Logs Render) |
 | `LOG_LEVEL` | `warning` (atau `info` saat awal uji coba) |
 | `DB_CONNECTION` | `pgsql` |
-| `DB_URL` 🔒 | connection string Neon (`postgresql://…?sslmode=require`) |
+| `DB_URL` 🔒 | connection string Neon branch `production` (`postgresql://…?sslmode=require`) |
+| `DB_SSLMODE` | opsional. Urutan prioritas: `?sslmode=` di `DB_URL` → `DB_SSLMODE` → otomatis (`require` untuk host non-lokal, `prefer` untuk localhost) |
 | `CACHE_STORE` | `database` |
 | `SESSION_DRIVER` | `database` |
 | `QUEUE_CONNECTION` | `sync` (tanpa worker terpisah; job berjalan langsung di request) |
@@ -160,6 +163,26 @@ Untuk mengaktifkannya, buat **Render Cron Job** dari repo & Dockerfile yang sama
    ( set -a; . /c/Users/<kamu>/digitalin-server.env; set +a; php artisan <perintah> )
    ```
    Variabel yang di-export menang atas `backend/.env` lokal (dotenv Laravel tidak menimpa env yang sudah ada).
+
+**Khusus laptop dengan PHP XAMPP — libpq lama tanpa SNI.** libpq bawaan XAMPP terlalu tua untuk mengirim nama endpoint Neon (SNI), sehingga `DB_URL` biasa gagal. Di file env laptop, ganti `DB_URL` dengan variabel terpisah dan sisipkan endpoint ID di password:
+```
+DB_URL=
+DB_CONNECTION=pgsql
+DB_HOST=<endpoint-id>.<region>.aws.neon.tech
+DB_PORT=5432
+DB_DATABASE=<nama-database>
+DB_USERNAME=<user>
+DB_PASSWORD=endpoint=<endpoint-id>;<password>
+```
+- `DB_URL=` sengaja dikosongkan agar `DB_URL` dari `backend/.env` tidak ikut terbaca.
+- `sslmode` otomatis `require` karena host-nya bukan localhost.
+- Trik ini **HANYA untuk laptop**. **Jangan** dipakai di env Render: image Docker memakai libpq baru, dan di sana tetap gunakan `DB_URL` biasa.
+
+> ⚠️ **Cek branch tujuan sebelum menjalankan perintah apa pun dari laptop.** Sebelum menjalankan perintah ke branch `production`, pastikan `.env`/file env yang dimuat **tidak** sedang mengarah ke branch `test`, dan sebaliknya.
+> - Cocokkan endpoint ID (`ep-…`) di `DB_HOST` dengan yang tertera di dashboard Neon.
+> - Atau jalankan `php artisan db:show` (dibungkus subshell yang sama). Perintah ini menampilkan host & nama database tanpa password.
+>
+> `demo:clear`, `migrate`, dan `auth:create-admin` langsung mengubah database yang sedang dituju.
 
 Contoh di bawah ditulis untuk Shell; dengan Cara B, bungkus perintahnya dalam subshell di atas.
 
