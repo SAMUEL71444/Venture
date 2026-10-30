@@ -12,7 +12,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * Profil milik sendiri per peran (registrasi, GET/PUT /me/profile). Whitelist
- * eksplisit: field yang bisa diubah lewat PUT /me/profile + status verifikasi.
+ * eksplisit: field yang bisa diubah lewat PUT /me/profile + status verifikasi
+ * (+ skill & portofolio mahasiswa).
  * Tidak mengirim user_id, path KTM, verifikator, rating/penghitung kontrak, timestamp.
  */
 final class OwnProfileResource extends JsonResource
@@ -48,6 +49,20 @@ final class OwnProfileResource extends JsonResource
             'verification_rejection_reason' => $this->verification_status === 'REJECTED' ? $this->rejectionReason() : null,
             'verification_attempts' => (int) $this->verification_attempts,
             'verification_attempts_remaining' => max(0, VerificationController::MAX_KTM_ATTEMPTS - (int) $this->verification_attempts),
+            // Dipakai halaman /profile mahasiswa (tidak ada endpoint GET terpisah untuk skill/portofolio sendiri).
+            'skills' => $this->skills
+                ->map(fn ($category) => ['id' => $category->id, 'name' => $category->name, 'level' => $category->pivot->level])
+                ->values(),
+            'portfolio' => $this->portfolioItems
+                ->sortByDesc(fn ($item) => [$item->created_at?->getTimestamp(), $item->id])
+                ->map(fn ($item) => [
+                    'id' => $item->id,
+                    'title' => $item->title,
+                    'description' => $item->description,
+                    'media_urls' => array_values((array) ($item->media_urls ?? [])),
+                    'is_verified' => (bool) $item->is_verified,
+                ])
+                ->values(),
         ];
     }
 

@@ -25,7 +25,7 @@ final class ProfileController extends Controller
         $user = $request->user();
         $profile = match ($user->role) {
             'UMKM' => $user->umkmProfile,
-            'STUDENT' => $user->studentProfile?->load('university'),
+            'STUDENT' => $user->studentProfile?->load(['university', 'skills', 'portfolioItems']),
             'MENTOR' => $user->mentorProfile?->load('expertises'),
             default => null,
         };

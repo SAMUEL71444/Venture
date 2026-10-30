@@ -22,6 +22,8 @@ final class AuthUserResource extends JsonResource
             'phone' => $this->phone,
             'role' => $this->role,
             'status' => $this->status,
+            // Tanggal bergabung (halaman Profil/Pengaturan). Sengaja bukan 'created_at'.
+            'joined_at' => $this->created_at?->toIso8601String(),
         ];
     }
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/dashboard/SideBar";
+import UserMenuTrigger from "@/components/dashboard/UserMenuTrigger";
 import RoleGuard from "./RoleGuard";
 import SessionLoading from "./SessionLoading";
 import useRequireAuth from "./useRequireAuth";
@@ -113,6 +114,10 @@ export default function AppShell({ children, aside, bare = false }) {
           <Link href="/dashboard" className="dash-mobilebar-brand" aria-label="Digital.in — dashboard">
             <LogoMark size={28} /><Wordmark />
           </Link>
+          {/* Menu akun (Profil, Pengaturan, Keluar) langsung dari bar atas di HP. */}
+          <div className="dash-mobilebar-user">
+            <UserMenuTrigger user={shellUser} placement="header" />
+          </div>
         </header>
       )}
 

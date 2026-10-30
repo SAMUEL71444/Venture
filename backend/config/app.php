@@ -55,6 +55,20 @@ return [
     'url' => env('APP_URL', 'http://localhost'),
 
     /*
+    | Frontend (Next.js) tujuan redirect dari tautan di email, mis. https://digitalin.vercel.app.
+    | Isi "/" bila frontend dan API berada di host yang sama (mode demo laptop lewat proxy
+    | Next.js): redirect dibuat relatif sehingga browser tetap di host tautan.
+    */
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
+
+    /*
+    | Host tautan di email (mis. verifikasi email kampus). false (default): APP_URL.
+    | true: host publik request yang memicu email, dari X-Forwarded-Host/-Proto yang dipercaya
+    | lewat TRUSTED_PROXIES. Hanya untuk mode demo laptop (URL tunnel berganti tiap sesi).
+    */
+    'links_use_request_host' => (bool) env('LINKS_USE_REQUEST_HOST', false),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------

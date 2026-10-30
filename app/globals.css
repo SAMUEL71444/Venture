@@ -2453,6 +2453,20 @@ img, video, canvas { max-width: 100%; height: auto; }
   .dash-sidebar .nav-flyout-item { display: flex; align-items: center; min-height: 44px; }
   .dash-sidebar .nav-row { min-height: 48px; }
 
+  /* Menu akun di HP: tombol avatar di bar atas, popup turun ke kanan bawah (tidak keluar layar). */
+  .dash-mobilebar-user { margin-left: auto; }
+  .user-menu-trigger.user-menu-trigger--header { width: 44px; height: 44px; padding: 0; justify-content: center; border-radius: 999px; }
+  .user-menu.user-menu--header {
+    left: auto; right: 0; top: calc(100% + 8px);
+    width: min(320px, calc(100vw - 24px));
+    max-height: calc(100dvh - 72px - var(--safe-top)); overflow-y: auto; overscroll-behavior: contain;
+    transform-origin: top right;
+  }
+  .user-menu.user-menu--header::before { display: none; }
+  /* Di dalam drawer, popup terbuka di bawah tombol (ke kanan akan terpotong drawer). */
+  .dash-sidebar .user-menu { position: static; width: auto; margin: 4px 8px 8px; box-shadow: none; border: 1px solid var(--border); }
+  .dash-sidebar .user-menu::before { display: none; }
+
   .dash-canvas { margin-top: 0; border-radius: 0; border-left: none; }
   .dash-main { padding: 20px max(16px, var(--safe-right)) 24px max(16px, var(--safe-left)); }
   .dash-aside { padding: 0 max(16px, var(--safe-right)) 24px max(16px, var(--safe-left)); }

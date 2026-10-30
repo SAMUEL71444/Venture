@@ -18,7 +18,12 @@ const CLOSE_DELAY = 150;
 // `user` selalu dikirim AppShell (dari RoleContext) — nggak ada lagi
 // default lokal di sini, karena AppShell sendiri udah nahan render sampai
 // role & user-nya siap (lihat components/layout/AppShell.js).
-export default function UserMenuTrigger({ user, sidebarOpen }) {
+//
+// Layar sentuh: hover hanya untuk mouse sungguhan (pointerType "mouse"), jadi ketukan
+// selalu lewat klik; ketukan di luar menu menutupnya (pointerdown).
+// `placement="header"`: tombol avatar di bar atas mobile (AppShell), popup turun ke
+// bawah-kanan dan tidak terpotong drawer.
+export default function UserMenuTrigger({ user, sidebarOpen, placement = "sidebar" }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [online, setOnline] = useState(true);
@@ -33,12 +38,14 @@ export default function UserMenuTrigger({ user, sidebarOpen }) {
     if (closeTimer.current) clearTimeout(closeTimer.current);
   };
 
-  const handleMouseEnter = () => {
+  const handleMouseEnter = (e) => {
+    if (e.pointerType !== "mouse") return;
     clearTimers();
     openTimer.current = setTimeout(() => setMenuOpen(true), OPEN_DELAY);
   };
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = (e) => {
+    if (e.pointerType !== "mouse") return;
     clearTimers();
     if (pinned) return; // klik yang buka popup ini, biarkan sampai ditutup eksplisit
     closeTimer.current = setTimeout(() => setMenuOpen(false), CLOSE_DELAY);
@@ -67,10 +74,10 @@ export default function UserMenuTrigger({ user, sidebarOpen }) {
     function onKeyDown(e) {
       if (e.key === "Escape") closeMenu();
     }
-    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [menuOpen]);
@@ -83,15 +90,18 @@ export default function UserMenuTrigger({ user, sidebarOpen }) {
     router.push("/");
   }
 
+  const header = placement === "header";
+
   return (
     <div
-      className="user-menu-trigger-wrap"
+      className={`user-menu-trigger-wrap ${header ? "user-menu-trigger-wrap--header" : ""}`}
       ref={wrapRef}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onPointerEnter={handleMouseEnter}
+      onPointerLeave={handleMouseLeave}
     >
       <button
-        className="user-menu-trigger"
+        type="button"
+        className={`user-menu-trigger ${header ? "user-menu-trigger--header" : ""}`}
         onClick={handleTriggerClick}
         aria-label="Menu akun"
         aria-haspopup="menu"
@@ -100,7 +110,7 @@ export default function UserMenuTrigger({ user, sidebarOpen }) {
         <div className="avatar avatar-sm" style={{ background: user.avatarBg || "var(--primary-light)" }}>
           {initials(user.name)}
         </div>
-       {sidebarOpen && (
+       {sidebarOpen && !header && (
             <div style={{ minWidth: 0, overflow: "hidden", textAlign: "left" }}>
                 <div className="t-small" style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden" }}>
                 {user.name}
@@ -114,6 +124,7 @@ export default function UserMenuTrigger({ user, sidebarOpen }) {
 
       {menuOpen && (
         <UserMenu
+          className={header ? "user-menu--header" : ""}
           user={user}
           profileMenu={config?.profileMenu}
           showOnlineToggle={config?.features?.onlineToggle}

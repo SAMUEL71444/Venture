@@ -10,11 +10,11 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
-const OWN_PROFILE_USER_KEYS = ['id', 'name', 'email', 'phone', 'role', 'status'];
+const OWN_PROFILE_USER_KEYS = ['id', 'name', 'email', 'phone', 'role', 'status', 'joined_at'];
 const OWN_PROFILE_STUDENT_KEYS = [
     'id', 'university', 'university_name_custom', 'nim', 'major', 'semester', 'bio', 'is_available',
     'campus_email', 'campus_email_verified_at', 'verification_status', 'has_ktm', 'verification_rejection_reason',
-    'verification_attempts', 'verification_attempts_remaining',
+    'verification_attempts', 'verification_attempts_remaining', 'skills', 'portfolio',
 ];
 const OWN_PROFILE_FORBIDDEN = ['password', 'password_hash', 'remember_token', 'access_token', 'refresh_token', 'token_hash',
     'ktm_file_url', 'verified_by', 'user_id', 'rating_avg', 'completed_contracts_count', 'created_at', 'updated_at',
@@ -131,4 +131,28 @@ it('exposes the latest KTM rejection reason to the student', function () {
         ->assertOk()
         ->assertJsonPath('data.profile.verification_status', 'REJECTED')
         ->assertJsonPath('data.profile.verification_rejection_reason', 'Foto KTM buram');
+});
+
+it('includes the student own skills and portfolio (whitelisted) and the join date', function () {
+    // Skill & portofolio hanya bisa diubah akun aktif (akun pending dibatasi ke /verify).
+    [$user] = studentWithProfile(['verification_status' => 'VERIFIED']);
+    $user->forceFill(['status' => 'ACTIVE'])->save();
+    $token = $user->createToken('t')->plainTextToken;
+    $category = ServiceCategory::query()->create(['name' => 'Desain Menu', 'slug' => 'desain-menu']);
+
+    $empty = $this->withToken($token)->getJson('/api/v1/me/profile')->assertOk()->json('data');
+    expect($empty['profile']['skills'])->toBe([])
+        ->and($empty['profile']['portfolio'])->toBe([])
+        ->and($empty['user']['joined_at'])->toBe($user->created_at->toIso8601String());
+
+    $this->putJson('/api/v1/students/me/skills', ['skills' => [['category_id' => $category->id, 'level' => 'ADVANCED']]])->assertOk();
+    $this->postJson('/api/v1/students/me/portfolio', ['title' => 'Menu Kedai', 'description' => 'Desain menu digital.', 'media_urls' => ['https://example.test/menu.png']])->assertCreated();
+
+    $data = $this->getJson('/api/v1/me/profile')->assertOk()->json('data');
+    expect($data['profile']['skills'])->toBe([['id' => $category->id, 'name' => 'Desain Menu', 'level' => 'ADVANCED']])
+        ->and($data['profile']['portfolio'])->toHaveCount(1)
+        ->and(array_keys($data['profile']['portfolio'][0]))->toEqualCanonicalizing(['id', 'title', 'description', 'media_urls', 'is_verified'])
+        ->and($data['profile']['portfolio'][0])->toMatchArray(['title' => 'Menu Kedai', 'media_urls' => ['https://example.test/menu.png'], 'is_verified' => false]);
+    expectNoForbiddenKeys($data);
+    expect(ownProfileAllKeys($data))->not->toContain('pivot')->not->toContain('student_id');
 });

@@ -42,8 +42,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/password/otp/send', [PasswordResetController::class, 'sendOtp'])->middleware('throttle:password-otp-send');
         Route::post('/password/otp/verify', [PasswordResetController::class, 'verifyOtp'])->middleware('throttle:password-otp-verify');
         Route::post('/password/reset', [PasswordResetController::class, 'reset'])->middleware('throttle:password-reset');
+        // Tanda tangan dicek di controller (bukan middleware 'signed'): browser diarahkan ke halaman
+        // frontend dengan status expired/invalid, klien JSON tetap mendapat 403 seperti sebelumnya.
         Route::get('/email/verify/{profile}/{hash}', [VerificationController::class, 'verifyCampusEmail'])
-            ->middleware('signed')
             ->name('auth.email.verify');
     });
 

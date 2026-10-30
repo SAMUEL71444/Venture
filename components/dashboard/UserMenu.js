@@ -10,12 +10,12 @@ import { initials } from "@/lib/mock-data";
 // group "top" tampil sebelum baris Tema, "bottom" sesudahnya, persis
 // urutan visual yang sudah ada (Profil Saya lalu Tema/Pengaturan/Bantuan)
 // — cuma sekarang datanya bisa beda per role.
-export default function UserMenu({ user, profileMenu = [], showOnlineToggle = true, onlineForMessages, onToggleOnline, onLogout }) {
+export default function UserMenu({ className = "", user, profileMenu = [], showOnlineToggle = true, onlineForMessages, onToggleOnline, onLogout }) {
   const topItems = profileMenu.filter((i) => i.group !== "bottom");
   const bottomItems = profileMenu.filter((i) => i.group === "bottom");
 
   return (
-    <div className="user-menu card" role="menu" onClick={(e) => e.stopPropagation()}>
+    <div className={`user-menu card ${className}`} role="menu" onClick={(e) => e.stopPropagation()}>
       <div className="user-menu-header">
         <div className="avatar avatar-lg" style={{ background: user.avatarBg || "var(--primary-light)" }}>
           {initials(user.name)}

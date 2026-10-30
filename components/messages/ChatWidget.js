@@ -20,7 +20,7 @@ import { unreadCount, formatLastSeen } from "@/lib/chat";
 // /messages sendiri, karena di situ chat-nya udah tampil penuh.
 // Halaman publik/pra-login: chat adalah fitur akun, dan bubble-nya dulu
 // menutupi tombol CTA homepage di layar HP.
-const PUBLIC_ROUTES = ["/", "/login", "/register", "/choose-type", "/verify", "/verify-email", "/forgot-password"];
+const PUBLIC_ROUTES = ["/", "/login", "/register", "/choose-type", "/verify", "/verify/campus-email", "/verify-email", "/forgot-password"];
 
 export default function ChatWidget() {
   const pathname = usePathname();

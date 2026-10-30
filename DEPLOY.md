@@ -88,7 +88,7 @@ Saat start, `docker/start.sh` menjalankan berurutan:
 | `APP_ENV` | `staging` atau `production` (lihat bagian 0) |
 | `APP_KEY` 🔒 | **Baru**, jangan memakai kunci lokal: jalankan `php artisan key:generate --show` di lokal lalu tempel hasilnya |
 | `APP_DEBUG` | `false` |
-| `APP_URL` | `https://<service>.onrender.com` |
+| `APP_URL` | `https://<service>.onrender.com`. Dipakai sebagai host tautan di email (verifikasi email kampus), jadi harus URL publik backend. |
 | `APP_BUSINESS_TIMEZONE` | `Asia/Jakarta` (opsional, ini default) |
 | `LOG_CHANNEL` | `stderr` (log muncul di tab Logs Render) |
 | `LOG_LEVEL` | `warning` (atau `info` saat awal uji coba) |
@@ -101,6 +101,7 @@ Saat start, `docker/start.sh` menjalankan berurutan:
 | `BROADCAST_CONNECTION` | `null` (**jangan** `log`: isi pesan chat akan tertulis di log) |
 | `TRUSTED_PROXIES` | `*` (Render berada di belakang load balancer; dipakai untuk IP klien di rate limit/audit dan deteksi https) |
 | `CORS_ALLOWED_ORIGINS` | domain Vercel, persis tanpa `/` di akhir, mis. `https://digitalin.vercel.app`; pisahkan dengan koma bila lebih dari satu. Isi setelah langkah 4. |
+| `FRONTEND_URL` | domain Vercel yang sama, mis. `https://digitalin.vercel.app`. Tautan verifikasi email kampus diarahkan ke `<FRONTEND_URL>/verify/campus-email?status=…`. Isi setelah langkah 4. |
 | `KTM_FILES_DISK` | `s3` |
 | `SUBMISSION_FILES_DISK` | `s3` |
 | `AWS_ACCESS_KEY_ID` 🔒 | *Access key ID* Supabase dari langkah 2 |
@@ -249,3 +250,56 @@ php artisan demo:clear --force
 - [ ] `NEXT_PUBLIC_AUTH_MOCK` tidak di-set di Vercel.
 - [ ] Bila `APP_ENV=staging` dipakai untuk pilot: pengguna diberi tahu bahwa pembayaran masih **tiruan**.
 - [ ] Akun admin memakai password kuat dan unik; akun uji coba lokal tidak ikut ke server.
+
+---
+
+## 7. Mode demo laptop (Cloudflare quick tunnel)
+
+Alternatif tanpa Render/Vercel untuk presentasi singkat. Backend, frontend, dan database berjalan di laptop, dibuka ke publik lewat **satu** tunnel Cloudflare.
+
+**Menjalankan** (dari root repo, port 8000 dan 3000 harus kosong):
+```powershell
+powershell -ExecutionPolicy Bypass -File .\demo-start.ps1
+```
+Skrip menjalankan, berurutan:
+1. `php artisan serve` di `127.0.0.1:8000`;
+2. `php artisan schedule:work` (tugas terjadwal backend), setelah backend siap, dengan env yang sama;
+3. `npm run build` lalu `npm run start` di `127.0.0.1:3000`, build terpisah di `.next/demo`;
+4. `cloudflared` quick tunnel ke port 3000.
+
+Link `https://….trycloudflare.com` ditampilkan jelas dan disalin ke clipboard. Log tiap proses ada di `%TEMP%\digitalin-demo`.
+
+**Menghentikan:**
+- **Ctrl+C** di jendela skrip menghentikan semua proses demo beserta turunannya, termasuk `php -S` dari `artisan serve`, node dari npm, dan `schedule:run` dari `schedule:work`.
+- Ctrl+C **tidak cukup** jika jendela PowerShell ditutup paksa (tombol X), proses PowerShell di-kill, atau laptop *sleep* saat skrip berhenti di tengah jalan. Di kasus itu pembersihan otomatis tidak dijamin berjalan, dan proses bisa tertinggal menahan port 8000/3000. Jalankan:
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File .\demo-stop.ps1
+  ```
+  - `demo-stop.ps1` hanya mematikan proses yang PID dan waktu start-nya dicatat `demo-start.ps1` di `%TEMP%\digitalin-demo\pids.json`, plus turunannya. php/node lain di laptop tidak disentuh.
+  - PID yang sudah dipakai ulang proses lain dilewati.
+  - `demo-start.ps1` menolak jalan selama proses sesi sebelumnya masih hidup.
+
+Cara kerjanya:
+- Browser memanggil `/api/v1/...` di domain tunnel yang sama. Next.js meneruskannya ke Laravel (rewrite di `next.config.mjs`, hanya aktif dengan `DEMO_LOCAL_PROXY=true`), jadi CORS tidak perlu diatur.
+- Env mode demo di-set oleh skrip untuk prosesnya saja; `backend/.env` tidak dibaca maupun diubah:
+  - backend: `APP_DEBUG=false`, `TRUSTED_PROXIES=127.0.0.1`, `LINKS_USE_REQUEST_HOST=true`, `FRONTEND_URL=/`.
+    - Tautan di email (verifikasi email kampus) memakai host tunnel yang sedang dipakai pengguna, diambil dari `X-Forwarded-Host`/`-Proto` yang dipercaya, bukan `APP_URL`. Karena itu tautan bisa dibuka dari perangkat lain.
+    - `FRONTEND_URL=/` membuat redirect sesudahnya tetap di host yang sama.
+    - Tanda tangan tautan relatif (path + query), jadi tidak bergantung pada host.
+    - Tautan dari sesi tunnel sebelumnya tidak bisa dibuka lagi karena host tunnel-nya sudah mati;
+  - frontend: `DEMO_LOCAL_PROXY=true`, `NEXT_PUBLIC_API_URL=/api/v1`, `NEXT_DIST_DIR=.next/demo`.
+- IP asli pengunjung (untuk rate limit) sampai ke Laravel:
+  - Cloudflare mengisi `X-Forwarded-For` dan `CF-Connecting-IP`.
+  - Proxy Next.js meneruskan header itu apa adanya (hanya menambah `X-Forwarded-Host`).
+  - Laravel mempercayai `127.0.0.1`, lalu mengambil IP paling kanan yang bukan proxy dari `X-Forwarded-For`. Nilai palsu yang dikirim pengunjung di sebelah kirinya diabaikan.
+  - Server hanya mendengarkan di `127.0.0.1`, sehingga perangkat lain di jaringan tidak bisa melewati tunnel.
+
+**Batasan:**
+- Laptop harus menyala, terhubung internet, dan jendela skrip tetap terbuka.
+- Link **berubah setiap sesi**. Quick tunnel tidak punya jaminan uptime dan tidak cocok untuk pengguna sungguhan.
+- Siapa pun yang memegang link bisa membuka aplikasi. Pakai data demo (`demo:seed`), jangan data asli.
+- Memakai `backend/.env` lokal apa adanya (database, mail, disk file). OTP hanya terkirim bila mail/WhatsApp lokal dikonfigurasi sungguhan; paling mudah login memakai akun demo.
+
+**Wajib `APP_DEBUG=false`.** Skrip sudah memaksanya lewat env proses, karena dengan debug aktif, detail error dan konfigurasi tampil ke siapa pun yang membuka link. Jika `php artisan config:cache` pernah dijalankan, env proses diabaikan. Karena itu skrip menolak jalan sampai `php artisan config:clear` dijalankan.
+
+`DEMO_LOCAL_PROXY` **tidak boleh** di-set di Vercel: build Vercel sengaja gagal jika variabel itu ada, atau jika `NEXT_PUBLIC_API_URL` bukan URL absolut.
