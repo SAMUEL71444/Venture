@@ -39,8 +39,10 @@ begin
   uji := 'Escrow (holding) terisi = Rp 1.000.000';
   hasil := case when v_hold = v_total then 'PASS (='||v_hold||')' else 'FAIL (='||v_hold||')' end; return next;
 
-  uji := 'Gateway clearing debit = 1.000.000';
-  hasil := case when v_gw = v_total then 'PASS' else 'FAIL (='||v_gw||')' end; return next;
+  -- Konvensi saldo = credit - debit. Gateway clearing kena DEBIT, jadi
+  -- saldonya -1.000.000 (benar secara akuntansi: akun transit uang masuk).
+  uji := 'Gateway clearing debit tercatat (saldo = -1.000.000)';
+  hasil := case when v_gw = -v_total then 'PASS' else 'FAIL (='||v_gw||')' end; return next;
 
   select coalesce(sum(le.debit),0), coalesce(sum(le.credit),0) into v_d, v_c
   from ledger_entries le where le.transaction_id = v_tx;
