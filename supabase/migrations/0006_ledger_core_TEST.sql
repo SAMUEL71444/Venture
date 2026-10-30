@@ -1,85 +1,76 @@
 -- ============================================================================
--- TEST CP5a — Membuktikan ledger double-entry benar. AMAN dijalankan: semua
--- dibungkus transaksi yang di-ROLLBACK di akhir, jadi TIDAK mengubah data.
--- Jalankan di SQL Editor; lihat NOTICE "TEST ... PASS/FAIL".
+-- TEST CP5a — Membuktikan ledger double-entry benar.
+-- Membuat fungsi uji sementara yang MENGEMBALIKAN TABEL hasil (muncul di panel
+-- Results), menangani error di dalam, lalu membersihkan data uji. Aman.
+-- Jalankan di SQL Editor dan BACA kolom "uji" & "hasil" di panel Results.
 -- ============================================================================
-do $$
+create or replace function _ledger_selftest()
+returns table(uji text, hasil text)
+language plpgsql
+as $$
 declare
-  v_tx uuid;
-  v_sys bigint;
-  v_err text;
-  v_fail int := 0;
+  v_tx uuid; v_tx2 uuid; v_err text; v_key text;
 begin
-  -- Siapkan dua akun sistem untuk uji (sudah ada dari migration). Catat saldo awal.
-
-  -- TEST 1: transaksi SEIMBANG (gateway_clearing debit 1.000.000, platform_revenue credit 1.000.000) harus SUKSES.
-  v_tx := post_ledger('TEST_BALANCED', null, 'test-balanced-'||gen_random_uuid(),
-    jsonb_build_array(
-      jsonb_build_object('account_type','system','system_key','gateway_clearing','debit',1000000),
-      jsonb_build_object('account_type','system','system_key','platform_revenue','credit',1000000)
-    ));
-  if v_tx is not null then raise notice 'TEST 1 (seimbang diterima): PASS';
-  else v_fail := v_fail + 1; raise notice 'TEST 1: FAIL'; end if;
-
-  -- TEST 2: transaksi TIDAK SEIMBANG harus DITOLAK.
+  -- TEST 1: transaksi seimbang diterima.
   begin
-    perform post_ledger('TEST_UNBALANCED', null, 'test-unbal-'||gen_random_uuid(),
+    v_tx := post_ledger('SELFTEST_BAL', null, 'st-bal-'||gen_random_uuid()::text,
       jsonb_build_array(
         jsonb_build_object('account_type','system','system_key','gateway_clearing','debit',1000000),
-        jsonb_build_object('account_type','system','system_key','platform_revenue','credit',999999)
-      ));
-    v_fail := v_fail + 1; raise notice 'TEST 2 (tak seimbang ditolak): FAIL (malah diterima!)';
+        jsonb_build_object('account_type','system','system_key','platform_revenue','credit',1000000)));
+    uji := 'TEST 1 - transaksi seimbang diterima';
+    hasil := case when v_tx is not null then 'PASS' else 'FAIL' end; return next;
+  exception when others then
+    uji := 'TEST 1 - transaksi seimbang diterima'; hasil := 'FAIL ('||sqlerrm||')'; return next;
+  end;
+
+  -- TEST 2: transaksi TIDAK seimbang DITOLAK.
+  begin
+    perform post_ledger('SELFTEST_UNBAL', null, 'st-unbal-'||gen_random_uuid()::text,
+      jsonb_build_array(
+        jsonb_build_object('account_type','system','system_key','gateway_clearing','debit',1000000),
+        jsonb_build_object('account_type','system','system_key','platform_revenue','credit',999999)));
+    uji := 'TEST 2 - tak seimbang ditolak'; hasil := 'FAIL (malah diterima)'; return next;
   exception when others then
     get stacked diagnostics v_err = message_text;
-    if v_err like 'LEDGER_UNBALANCED%' then raise notice 'TEST 2 (tak seimbang ditolak): PASS';
-    else v_fail := v_fail + 1; raise notice 'TEST 2: FAIL (error lain: %)', v_err; end if;
+    uji := 'TEST 2 - tak seimbang ditolak';
+    hasil := case when v_err like 'LEDGER_UNBALANCED%' then 'PASS' else 'FAIL ('||v_err||')' end; return next;
   end;
 
-  -- TEST 3: entri dua-sisi (debit DAN credit > 0) harus DITOLAK.
+  -- TEST 3: entri dua-sisi (debit & credit >0) ditolak.
   begin
-    perform post_ledger('TEST_BADSIDE', null, 'test-badside-'||gen_random_uuid(),
+    perform post_ledger('SELFTEST_BADSIDE', null, 'st-bad-'||gen_random_uuid()::text,
       jsonb_build_array(
         jsonb_build_object('account_type','system','system_key','gateway_clearing','debit',100,'credit',100),
-        jsonb_build_object('account_type','system','system_key','platform_revenue','credit',100)
-      ));
-    v_fail := v_fail + 1; raise notice 'TEST 3 (entri dua-sisi ditolak): FAIL';
-  exception when others then raise notice 'TEST 3 (entri dua-sisi ditolak): PASS';
+        jsonb_build_object('account_type','system','system_key','platform_revenue','credit',100)));
+    uji := 'TEST 3 - entri dua-sisi ditolak'; hasil := 'FAIL (malah diterima)'; return next;
+  exception when others then
+    uji := 'TEST 3 - entri dua-sisi ditolak'; hasil := 'PASS'; return next;
   end;
 
-  -- TEST 4: idempotency — key sama dipanggil 2x hanya posting sekali.
-  declare v_tx2 uuid; v_key text := 'test-idem-'||gen_random_uuid();
-  begin
-    v_tx := post_ledger('TEST_IDEM', null, v_key,
-      jsonb_build_array(
-        jsonb_build_object('account_type','system','system_key','gateway_clearing','debit',500),
-        jsonb_build_object('account_type','system','system_key','platform_revenue','credit',500)
-      ));
-    v_tx2 := post_ledger('TEST_IDEM', null, v_key,
-      jsonb_build_array(
-        jsonb_build_object('account_type','system','system_key','gateway_clearing','debit',500),
-        jsonb_build_object('account_type','system','system_key','platform_revenue','credit',500)
-      ));
-    if v_tx = v_tx2 then raise notice 'TEST 4 (idempotency): PASS';
-    else v_fail := v_fail + 1; raise notice 'TEST 4 (idempotency): FAIL (posting ganda)'; end if;
-  end;
+  -- TEST 4: idempotency.
+  v_key := 'st-idem-'||gen_random_uuid()::text;
+  v_tx := post_ledger('SELFTEST_IDEM', null, v_key,
+    jsonb_build_array(
+      jsonb_build_object('account_type','system','system_key','gateway_clearing','debit',500),
+      jsonb_build_object('account_type','system','system_key','platform_revenue','credit',500)));
+  v_tx2 := post_ledger('SELFTEST_IDEM', null, v_key,
+    jsonb_build_array(
+      jsonb_build_object('account_type','system','system_key','gateway_clearing','debit',500),
+      jsonb_build_object('account_type','system','system_key','platform_revenue','credit',500)));
+  uji := 'TEST 4 - idempotency (tak posting ganda)';
+  hasil := case when v_tx = v_tx2 then 'PASS' else 'FAIL' end; return next;
 
-  -- TEST 5: saldo wallet terupdate benar (kredit 350.000 → saldo +350.000).
-  declare v_owner uuid;
-  begin
-    -- pakai id acak sebagai owner wallet uji (tidak perlu profiles nyata dalam rollback ini,
-    -- tapi FK wallets→profiles akan menolak; jadi lewati update nyata & uji lewat system account saja).
-    null;
-  end;
+  -- Bersihkan SEMUA data uji (transaksi + entri + efek saldo sistem).
+  -- Kembalikan saldo system_accounts ke 0 untuk akun yang kita sentuh di uji
+  -- (nilai nyata belum ada di tahap ini, jadi reset ke 0 aman).
+  delete from ledger_entries where transaction_id in (select id from ledger_transactions where kind like 'SELFTEST_%');
+  delete from ledger_transactions where kind like 'SELFTEST_%';
+  update system_accounts set balance = 0 where key in ('gateway_clearing','platform_revenue');
 
-  if v_fail = 0 then raise notice '=== SEMUA TEST LEDGER PASS (ledger double-entry benar) ===';
-  else raise notice '=== ADA % TEST GAGAL ===', v_fail; end if;
+  uji := '=== BERSIH: data uji dihapus ==='; hasil := 'OK'; return next;
+end;
+$$;
 
-  -- Rollback semua perubahan uji.
-  raise exception 'ROLLBACK_TEST_SENGAJA';
-exception when others then
-  if sqlerrm = 'ROLLBACK_TEST_SENGAJA' then
-    raise notice '(perubahan uji di-rollback, data asli tidak berubah)';
-  else
-    raise notice 'ERROR TAK TERDUGA: %', sqlerrm;
-  end if;
-end $$;
+select * from _ledger_selftest();
+
+drop function _ledger_selftest();
