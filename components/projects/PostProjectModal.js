@@ -12,6 +12,8 @@ import {
   CATEGORIES, PRICE_TYPES, SKILL_OPTIONS, emptyDraft, newMilestone, validateDraft,
   buildPostedProject, sumAmounts,
 } from "@/lib/projects-posting";
+import { createProjectFromDraft } from "@/lib/supabase/projects";
+import { USE_SUPABASE } from "@/lib/auth/api";
 
 const STEPS = ["Info Dasar", "Milestone & Anggaran", "Review & Posting"];
 
@@ -63,9 +65,14 @@ export default function PostProjectModal({ open, onClose, umkmName, onPosted }) 
   function submit() {
     if (!v.ok) return;
     const project = buildPostedProject(draft, umkmName, MOCK_TODAY);
-    addProject(project);
+    addProject(project);           // UI lokal langsung terupdate (tetap jalan apa pun)
     onPosted?.(project);
     onClose();
+    // Jembatan ke Supabase (best-effort): kalau login sebagai UMKM, proyek
+    // ikut tersimpan ke database. Gagal/tak-login tidak mengganggu UI.
+    if (USE_SUPABASE) {
+      createProjectFromDraft(project).catch(() => {});
+    }
   }
 
   const allSkills = [...SKILL_OPTIONS, ...draft.skills.filter((s) => !SKILL_OPTIONS.includes(s))];
