@@ -82,16 +82,21 @@ function Header({ user, profile }) {
 }
 
 function Completeness({ profile }) {
+  // Checklist disederhanakan: tampilkan apa yang kurang sebagai teks biasa
+  // (bagian-bagiannya sudah ada di halaman yang sama di bawah ini, jadi tidak
+  // perlu link anchor yang bikin halaman "lompat"/tidak bisa scroll).
   const items = [
-    { done: !!profile.bio, label: "Tulis ringkasan diri", href: "#sp-summary" },
-    { done: !!profile.major, label: "Isi jurusan / program studi", href: "/settings?tab=kontak" },
-    { done: profile.skills.length > 0, label: "Tambahkan minimal satu skill", href: "#sp-skills" },
-    { done: profile.portfolio.length > 0, label: "Tambahkan portofolio", href: "#sp-portfolio" },
-    { done: profile.verification_status === "VERIFIED", label: "Verifikasi status mahasiswa", href: "/verify" },
+    { done: !!profile.bio, label: "Ringkasan diri" },
+    { done: !!profile.major, label: "Jurusan / program studi" },
+    { done: profile.skills.length > 0, label: "Minimal satu skill" },
+    { done: profile.portfolio.length > 0, label: "Portofolio" },
+    { done: profile.verification_status === "VERIFIED", label: "Verifikasi status mahasiswa" },
   ];
   const done = items.filter((i) => i.done).length;
   if (done === items.length) return null;
   const pct = Math.round((done / items.length) * 100);
+  const missing = items.filter((i) => !i.done);
+  const needVerify = profile.verification_status !== "VERIFIED";
 
   return (
     <SettingsCard title="Lengkapi profil">
@@ -102,15 +107,19 @@ function Completeness({ profile }) {
       <div style={{ height: 6, borderRadius: 999, background: "var(--border)", marginTop: 8, overflow: "hidden" }} aria-hidden="true">
         <div style={{ width: `${pct}%`, height: "100%", background: "var(--primary)" }} />
       </div>
-      <ul className="mt-12" style={{ listStyle: "none", padding: 0, margin: "12px 0 0", display: "grid", gap: 8 }}>
-        {items.filter((i) => !i.done).map((i) => (
-          <li key={i.label}>
-            {i.href.startsWith("#")
-              ? <a href={i.href} className="link-btn">{i.label}</a>
-              : <Link href={i.href} className="link-btn">{i.label}</Link>}
-          </li>
-        ))}
-      </ul>
+
+      <p className="t-small muted mt-12">Yang masih perlu dilengkapi:</p>
+      <div className="row gap-6 mt-8" style={{ flexWrap: "wrap" }}>
+        {missing.map((i) => <span key={i.label} className="chip">{i.label}</span>)}
+      </div>
+
+      {/* Satu aksi utama yang jelas: kalau belum verifikasi → ke /verify;
+          selain itu isi di bagian halaman ini langsung (scroll biasa). */}
+      {needVerify && (
+        <Link href="/verify" className="btn btn-primary btn-sm mt-12" style={{ display: "inline-flex" }}>
+          Verifikasi status mahasiswa
+        </Link>
+      )}
     </SettingsCard>
   );
 }
