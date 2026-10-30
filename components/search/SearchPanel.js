@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/Icon";
 import { useSearchPanel } from "@/context/SearchPanelContext";
@@ -32,7 +33,11 @@ export default function SearchPanel({ sidebarWidth }) {
   const [query, setQuery] = useState(initialQuery);
   const [scope, setScope] = useState("proyek");
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [mounted, setMounted] = useState(false);
   const inputRef = useRef(null);
+
+  // Portal hanya bisa dibuat di client setelah mount (document ada).
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -48,11 +53,13 @@ export default function SearchPanel({ sidebarWidth }) {
       if (e.key === "Escape") closeSearch();
     }
     document.addEventListener("keydown", onKeyDown);
-    const prevOverflow = document.body.style.overflow;
+    // Kunci scroll body saat panel terbuka. Saat ditutup, kembalikan ke ''
+    // (bukan nilai tangkapan) supaya tidak berebut/menyangkut dengan lock
+    // milik AppShell — penyebab halaman terasa "beku" setelah panel tutup.
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = prevOverflow;
+      document.body.style.overflow = "";
     };
   }, [isOpen, closeSearch]);
 
@@ -103,9 +110,12 @@ export default function SearchPanel({ sidebarWidth }) {
     }
   }
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  // Dirender lewat portal ke <body> supaya overlay & z-index-nya dihitung
+  // terhadap viewport, bukan terjebak di stacking context sidebar (z-index:30).
+  // Itu penyebab bug "stuck": overlay menutupi tombol konten & tidak bisa ditutup.
+  return createPortal(
     <>
       <div className="search-overlay" style={{ left: sidebarWidth }} onClick={closeSearch} aria-hidden="true" />
       <div
@@ -181,6 +191,7 @@ export default function SearchPanel({ sidebarWidth }) {
           )}
         </div>
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
