@@ -1,4 +1,6 @@
-# Folder ini tidak dipakai oleh front-end Next.js di Vercel.
-backend
-supabase
-docs
+# Folder ini tidak dipakai front-end Next.js di Vercel.
+# Pakai garis miring di depan supaya HANYA folder di root yang diabaikan
+# (jangan sampai /lib/supabase ikut terhapus!).
+/backend
+/supabase
+/docs
